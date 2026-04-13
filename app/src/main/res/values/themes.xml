@@ -1,35 +1,86 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <!-- Dark theme (default) -->
-    <style name="Theme.Alarmy" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <item name="colorPrimary">@color/purple_500</item>
-        <item name="colorPrimaryVariant">@color/purple_700</item>
-        <item name="colorOnPrimary">@color/white</item>
-        <item name="colorSecondary">@color/teal_200</item>
-        <item name="colorSecondaryVariant">@color/teal_700</item>
-        <item name="colorOnSecondary">@color/black</item>
-        <item name="android:colorBackground">@color/dark_background</item>
-        <item name="colorSurface">@color/dark_surface</item>
-        <item name="colorOnSurface">@color/white</item>
-        <item name="android:statusBarColor">@color/dark_background</item>
-        <item name="android:navigationBarColor">@color/dark_background</item>
-        <item name="android:textColorPrimary">#E0E0E6</item>
-        <item name="android:textColorSecondary">#9496A8</item>
+    <style name="Theme.Alarmy" parent="Theme.MaterialComponents.NoActionBar">
+        <item name="colorPrimary">@color/accent_primary</item>
+        <item name="colorPrimaryVariant">@color/accent_primary_muted</item>
+        <item name="colorOnPrimary">@color/text_on_accent</item>
+        <item name="colorSecondary">@color/accent_secondary</item>
+        <item name="colorOnSecondary">@color/bg_primary</item>
+        <item name="android:colorBackground">@color/bg_primary</item>
+        <item name="colorSurface">@color/surface_card</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+        <item name="android:statusBarColor">@color/bg_primary</item>
+        <item name="android:navigationBarColor">@color/bg_primary</item>
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+        <item name="android:textColorHint">@color/text_tertiary</item>
+        <item name="colorControlActivated">@color/accent_primary</item>
+        <item name="colorControlNormal">@color/text_tertiary</item>
+        <item name="android:windowBackground">@color/bg_primary</item>
+
+        <!-- Switch styling -->
+        <item name="colorSwitchThumbNormal">@color/text_tertiary</item>
+
+        <!-- TextInputLayout -->
+        <item name="textInputStyle">@style/Alarmy.TextInputLayout</item>
     </style>
 
-    <!-- Light theme variant -->
-    <style name="Theme.Alarmy.Light" parent="Theme.MaterialComponents.Light.NoActionBar">
-        <item name="colorPrimary">@color/purple_500</item>
-        <item name="colorPrimaryVariant">@color/purple_700</item>
-        <item name="colorOnPrimary">@color/white</item>
-        <item name="colorSecondary">@color/teal_200</item>
-        <item name="colorSecondaryVariant">@color/teal_700</item>
-        <item name="colorOnSecondary">@color/black</item>
-        <item name="android:colorBackground">@color/light_background</item>
-        <item name="colorSurface">@color/light_surface</item>
-        <item name="android:statusBarColor">@color/light_background</item>
-        <item name="android:navigationBarColor">@color/light_background</item>
+    <style name="Alarmy" parent="Theme.Alarmy" />
+
+    <!-- Text Input -->
+    <style name="Alarmy.TextInputLayout" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+        <item name="boxStrokeColor">@color/text_input_box_stroke</item>
+        <item name="hintTextColor">@color/accent_primary</item>
+        <item name="android:textColorHint">@color/text_tertiary</item>
+        <item name="boxCornerRadiusTopStart">12dp</item>
+        <item name="boxCornerRadiusTopEnd">12dp</item>
+        <item name="boxCornerRadiusBottomStart">12dp</item>
+        <item name="boxCornerRadiusBottomEnd">12dp</item>
+    </style>
+
+    <!-- Section headers in forms -->
+    <style name="Alarmy.SectionHeader">
+        <item name="android:textSize">13sp</item>
+        <item name="android:textColor">@color/accent_primary</item>
+        <item name="android:letterSpacing">0.08</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <!-- Setting row label -->
+    <style name="Alarmy.SettingLabel">
+        <item name="android:textSize">15sp</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+
+    <!-- Setting row value -->
+    <style name="Alarmy.SettingValue">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@color/text_secondary</item>
+    </style>
+
+    <!-- Save button -->
+    <style name="Alarmy.Button.Primary" parent="Widget.MaterialComponents.Button">
+        <item name="backgroundTint">@color/accent_primary</item>
+        <item name="android:textColor">@color/bg_primary</item>
+        <item name="cornerRadius">12dp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:letterSpacing">0.04</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:paddingStart">32dp</item>
+        <item name="android:paddingEnd">32dp</item>
+        <item name="android:minHeight">48dp</item>
+    </style>
+
+    <!-- Cancel button -->
+    <style name="Alarmy.Button.Ghost" parent="Widget.MaterialComponents.Button.TextButton">
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="cornerRadius">12dp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textSize">14sp</item>
+        <item name="rippleColor">@color/ripple_light</item>
     </style>
 
 </resources>

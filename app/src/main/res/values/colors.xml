@@ -1,25 +1,59 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Core palette -->
+    <color name="bg_primary">#0D0E1A</color>
+    <color name="bg_secondary">#151728</color>
+    <color name="surface_card">#1C1F35</color>
+    <color name="surface_card_elevated">#232741</color>
+    <color name="surface_input">#1A1D32</color>
+
+    <!-- Accent -->
+    <color name="accent_primary">#7B8CFF</color>
+    <color name="accent_primary_muted">#4D5899</color>
+    <color name="accent_secondary">#00E5CC</color>
+    <color name="accent_glow">#336C63FF</color>
+
+    <!-- Text -->
+    <color name="text_primary">#ECEEF6</color>
+    <color name="text_secondary">#7C80A0</color>
+    <color name="text_tertiary">#4A4E6A</color>
+    <color name="text_on_accent">#FFFFFF</color>
+
+    <!-- Status -->
+    <color name="status_error">#FF6B6B</color>
+    <color name="status_success">#5CFFB1</color>
+    <color name="status_warning">#FFAB40</color>
+    <color name="status_warning_bg">#33FFAB40</color>
+
+    <!-- Day toggle -->
+    <color name="day_toggle_on">#7B8CFF</color>
+    <color name="day_toggle_off">#252841</color>
+    <color name="day_toggle_text">#ECEEF6</color>
+    <color name="day_toggle_text_off">#7C80A0</color>
+
+    <!-- Borders & dividers -->
+    <color name="border_subtle">#1F2340</color>
+    <color name="border_card">#262A47</color>
+    <color name="divider">#1A1D35</color>
+
+    <!-- Game colors -->
+    <color name="game_bg">#0A0B15</color>
+    <color name="game_block_idle">#1C1F38</color>
+    <color name="game_block_highlight">#7B8CFF</color>
+    <color name="game_block_selected">#5CFFB1</color>
+    <color name="game_block_wrong">#FF6B6B</color>
+    <color name="game_block_border">#2A2E4D</color>
+
+    <!-- Legacy compat -->
     <color name="purple_200">#BB86FC</color>
     <color name="purple_300">#9C7CFF</color>
-    <color name="purple_500">#6C63FF</color>
-    <color name="purple_700">#4A42DB</color>
-    <color name="teal_200">#03DAC5</color>
+    <color name="purple_500">#7B8CFF</color>
+    <color name="purple_700">#4D5899</color>
+    <color name="teal_200">#00E5CC</color>
     <color name="teal_700">#018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
-    <!-- Dark theme colors -->
-    <color name="dark_background">#1A1B2E</color>
-    <color name="dark_surface">#252740</color>
-    <color name="dark_surface_variant">#2D2F4A</color>
-
-    <!-- Light theme colors -->
-    <color name="light_background">#F5F5F7</color>
-    <color name="light_surface">#FFFFFF</color>
-
-    <!-- Day toggle -->
-    <color name="day_toggle_on">#6C63FF</color>
-    <color name="day_toggle_off">#3D4157</color>
-    <color name="day_toggle_text">#E0E0E6</color>
+    <!-- Ripple -->
+    <color name="ripple_light">#1AFFFFFF</color>
 </resources>
