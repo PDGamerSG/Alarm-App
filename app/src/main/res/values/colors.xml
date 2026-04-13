@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="purple_200">#BB86FC</color>
+    <color name="purple_300">#9C7CFF</color>
+    <color name="purple_500">#6C63FF</color>
+    <color name="purple_700">#4A42DB</color>
+    <color name="teal_200">#03DAC5</color>
+    <color name="teal_700">#018786</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <!-- Dark theme colors -->
+    <color name="dark_background">#1A1B2E</color>
+    <color name="dark_surface">#252740</color>
+    <color name="dark_surface_variant">#2D2F4A</color>
+
+    <!-- Light theme colors -->
+    <color name="light_background">#F5F5F7</color>
+    <color name="light_surface">#FFFFFF</color>
+
+    <!-- Day toggle -->
+    <color name="day_toggle_on">#6C63FF</color>
+    <color name="day_toggle_off">#3D4157</color>
+    <color name="day_toggle_text">#E0E0E6</color>
+</resources>
