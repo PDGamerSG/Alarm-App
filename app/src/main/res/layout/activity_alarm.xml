@@ -28,6 +28,23 @@
         android:textColor="#B0B3C5"
         android:textSize="20sp" />
 
+    <!-- Round Indicator -->
+    <TextView
+        android:id="@+id/tvRoundInfo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/round_badge_bg"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="6dp"
+        android:paddingBottom="6dp"
+        android:text="ROUND 1 OF 3"
+        android:textColor="#FFFFFF"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:letterSpacing="0.12" />
+
     <!-- Game Status -->
     <TextView
         android:id="@+id/tvGameStatus"

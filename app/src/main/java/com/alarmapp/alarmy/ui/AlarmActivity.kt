@@ -4,6 +4,9 @@ import android.app.KeyguardManager
 import android.content.Context
 import android.os.Build
 import android.os.Bundle
+import android.view.View
+import android.view.WindowInsets
+import android.view.WindowInsetsController
 import android.view.WindowManager
 import android.widget.TextView
 import android.widget.Toast
@@ -24,15 +27,21 @@ class AlarmActivity : AppCompatActivity(), MemoryGameView.GameListener {
     private lateinit var tvAttempts: TextView
     private lateinit var tvWrong: TextView
     private lateinit var btnSnooze: TextView
+    private lateinit var tvRoundInfo: TextView
 
     private var snoozeMinutes: Int = 0
     private var alarmId: Long = -1L
     private val timer = Timer()
 
+    private val totalRounds = 3
+    private var currentRound = 1
+    private var baseDifficulty = Alarm.DIFFICULTY_EASY
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setupWindowFlags()
         setContentView(R.layout.activity_alarm)
+        applyImmersiveMode()
 
         alarmId = intent.getLongExtra("alarm_id", -1L)
         val difficulty = intent.getIntExtra("difficulty", Alarm.DIFFICULTY_EASY)
@@ -45,12 +54,16 @@ class AlarmActivity : AppCompatActivity(), MemoryGameView.GameListener {
         tvAttempts = findViewById(R.id.tvAttempts)
         tvWrong = findViewById(R.id.tvWrong)
         btnSnooze = findViewById(R.id.btnSnooze)
+        tvRoundInfo = findViewById(R.id.tvRoundInfo)
         memoryGameView = findViewById(R.id.memoryGameView)
 
         tvLabel.text = if (label.isNotBlank()) label else "Alarm"
 
-        memoryGameView.difficulty = difficulty
+        baseDifficulty = difficulty
+        currentRound = 1
+        memoryGameView.difficulty = baseDifficulty
         memoryGameView.listener = this
+        updateRoundDisplay()
 
         // Snooze button
         if (snoozeMinutes > 0) {
@@ -93,15 +106,65 @@ class AlarmActivity : AppCompatActivity(), MemoryGameView.GameListener {
         )
     }
 
+    private fun applyImmersiveMode() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            window.insetsController?.let {
+                it.hide(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
+                it.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            }
+        } else {
+            @Suppress("DEPRECATION")
+            window.decorView.systemUiVisibility = (
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                    or View.SYSTEM_UI_FLAG_FULLSCREEN
+                    or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                    or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                    or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                    or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+            )
+        }
+    }
+
+    private fun updateRoundDisplay() {
+        tvRoundInfo.text = "ROUND $currentRound OF $totalRounds"
+    }
+
     private fun updateTime() {
         val format = SimpleDateFormat("hh:mm a", Locale.getDefault())
         tvTime.text = format.format(Date())
     }
 
+    override fun onResume() {
+        super.onResume()
+        applyImmersiveMode()
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) applyImmersiveMode()
+    }
+
     override fun onGameComplete() {
-        tvStatus.text = "DISMISSED"
-        tvWrong.visibility = android.view.View.GONE
-        dismissAlarm()
+        if (currentRound < totalRounds) {
+            currentRound++
+            tvStatus.text = "ROUND COMPLETE! GET READY..."
+            tvWrong.visibility = View.GONE
+            updateRoundDisplay()
+            // Bump difficulty by 1 per round, capped at 9
+            memoryGameView.difficulty = (baseDifficulty + currentRound - 1).coerceAtMost(9)
+            memoryGameView.postDelayed({
+                memoryGameView.reset()
+                memoryGameView.postDelayed({
+                    tvStatus.text = "GET READY..."
+                    memoryGameView.startGame()
+                }, 800)
+            }, 1500)
+        } else {
+            tvStatus.text = "ALARM DISMISSED!"
+            tvRoundInfo.text = "ALL DONE!"
+            tvWrong.visibility = View.GONE
+            dismissAlarm()
+        }
     }
 
     override fun onWrongAttempt(attemptCount: Int) {
