@@ -27,6 +27,7 @@ class MemoryGameView @JvmOverloads constructor(
         fun onWrongAttempt(attemptCount: Int)
         fun onSequenceShowStart()
         fun onSequenceShowEnd()
+        fun onCorrectTap(progress: Float) // 0.0 → 1.0 as sequence is completed
     }
 
     var listener: GameListener? = null
@@ -241,6 +242,7 @@ class MemoryGameView @JvmOverloads constructor(
             invalidate()
 
             userInputIndex++
+            listener?.onCorrectTap(userInputIndex.toFloat() / sequence.size.toFloat())
             if (userInputIndex >= sequence.size) {
                 // Game complete!
                 isAcceptingInput = false

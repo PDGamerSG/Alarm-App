@@ -12,6 +12,8 @@ import android.media.RingtoneManager
 import android.net.Uri
 import android.os.*
 import androidx.core.app.NotificationCompat
+import kotlin.math.max
+import kotlin.math.min
 import com.alarmapp.alarmy.R
 import com.alarmapp.alarmy.data.Alarm
 import com.alarmapp.alarmy.data.AlarmDatabase
@@ -21,11 +23,19 @@ import kotlinx.coroutines.*
 
 class AlarmService : Service() {
 
+    inner class AlarmBinder : Binder() {
+        fun setVolume(volume: Float) {
+            val clamped = min(1f, max(0f, volume))
+            mediaPlayer?.setVolume(clamped, clamped)
+        }
+    }
+
+    private val binder = AlarmBinder()
     private var mediaPlayer: MediaPlayer? = null
     private var vibrator: Vibrator? = null
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
-    override fun onBind(intent: Intent?): IBinder? = null
+    override fun onBind(intent: Intent?): IBinder = binder
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val alarmId = intent?.getLongExtra("alarm_id", -1L) ?: -1L

@@ -1,9 +1,14 @@
 package com.alarmapp.alarmy.ui
 
+import android.animation.ValueAnimator
 import android.app.KeyguardManager
+import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
+import android.content.ServiceConnection
 import android.os.Build
 import android.os.Bundle
+import android.os.IBinder
 import android.view.View
 import android.view.WindowInsets
 import android.view.WindowInsetsController
@@ -36,6 +41,21 @@ class AlarmActivity : AppCompatActivity(), MemoryGameView.GameListener {
     private val totalRounds = 3
     private var currentRound = 1
     private var baseDifficulty = Alarm.DIFFICULTY_EASY
+
+    // Volume control
+    private var alarmBinder: AlarmService.AlarmBinder? = null
+    private var currentVolume = 1.0f
+    private var volumeAnimator: ValueAnimator? = null
+
+    private val serviceConnection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+            alarmBinder = service as? AlarmService.AlarmBinder
+            alarmBinder?.setVolume(1.0f)
+        }
+        override fun onServiceDisconnected(name: ComponentName?) {
+            alarmBinder = null
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -129,9 +149,44 @@ class AlarmActivity : AppCompatActivity(), MemoryGameView.GameListener {
         tvRoundInfo.text = "ROUND $currentRound OF $totalRounds"
     }
 
+    /** Volume at which a round starts — decreases each round as reward for progress */
+    private fun roundStartVolume(round: Int): Float = when (round) {
+        1 -> 1.0f
+        2 -> 0.75f
+        else -> 0.5f
+    }
+
+    private fun animateVolume(target: Float, durationMs: Long = 600) {
+        volumeAnimator?.cancel()
+        volumeAnimator = ValueAnimator.ofFloat(currentVolume, target).apply {
+            duration = durationMs
+            addUpdateListener {
+                currentVolume = it.animatedValue as Float
+                alarmBinder?.setVolume(currentVolume)
+            }
+            start()
+        }
+    }
+
+    private fun snapVolume(target: Float) {
+        volumeAnimator?.cancel()
+        currentVolume = target
+        alarmBinder?.setVolume(currentVolume)
+    }
+
     private fun updateTime() {
         val format = SimpleDateFormat("hh:mm a", Locale.getDefault())
         tvTime.text = format.format(Date())
+    }
+
+    override fun onStart() {
+        super.onStart()
+        bindService(Intent(this, AlarmService::class.java), serviceConnection, Context.BIND_AUTO_CREATE)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        runCatching { unbindService(serviceConnection) }
     }
 
     override fun onResume() {
@@ -150,8 +205,8 @@ class AlarmActivity : AppCompatActivity(), MemoryGameView.GameListener {
             tvStatus.text = "ROUND COMPLETE! GET READY..."
             tvWrong.visibility = View.GONE
             updateRoundDisplay()
-            // Bump difficulty by 1 per round, capped at 9
-            memoryGameView.difficulty = (baseDifficulty + currentRound - 1).coerceAtMost(9)
+            // Reward: set volume to next round's base (lower than current)
+            animateVolume(roundStartVolume(currentRound), durationMs = 800)
             memoryGameView.postDelayed({
                 memoryGameView.reset()
                 memoryGameView.postDelayed({
@@ -163,20 +218,32 @@ class AlarmActivity : AppCompatActivity(), MemoryGameView.GameListener {
             tvStatus.text = "ALARM DISMISSED!"
             tvRoundInfo.text = "ALL DONE!"
             tvWrong.visibility = View.GONE
-            dismissAlarm()
+            animateVolume(0f, durationMs = 600)
+            memoryGameView.postDelayed({ dismissAlarm() }, 600)
         }
+    }
+
+    override fun onCorrectTap(progress: Float) {
+        // As the sequence is completed (progress 0→1), volume fades from roundBase down to ~10%
+        val base = roundStartVolume(currentRound)
+        val target = base * (1f - progress * 0.9f)
+        animateVolume(target, durationMs = 400)
     }
 
     override fun onWrongAttempt(attemptCount: Int) {
         tvAttempts.text = "Attempts: $attemptCount"
-        tvWrong.visibility = android.view.View.VISIBLE
+        tvWrong.visibility = View.VISIBLE
         tvWrong.text = "WRONG!"
         tvWrong.alpha = 1f
         tvWrong.animate().alpha(0f).setDuration(1500).start()
+        // Punishment: snap back to full volume
+        snapVolume(1.0f)
     }
 
     override fun onSequenceShowStart() {
         tvStatus.text = "WATCH THE PATTERN"
+        // Restore to round's base volume while showing the pattern
+        animateVolume(roundStartVolume(currentRound), durationMs = 500)
     }
 
     override fun onSequenceShowEnd() {
@@ -216,6 +283,7 @@ class AlarmActivity : AppCompatActivity(), MemoryGameView.GameListener {
 
     override fun onDestroy() {
         timer.cancel()
+        volumeAnimator?.cancel()
         super.onDestroy()
     }
 }
