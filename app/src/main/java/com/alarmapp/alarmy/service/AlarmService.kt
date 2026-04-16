@@ -37,8 +37,11 @@ class AlarmService : Service() {
 
     override fun onBind(intent: Intent?): IBinder = binder
 
+    private var isConfirmation = false
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val alarmId = intent?.getLongExtra("alarm_id", -1L) ?: -1L
+        isConfirmation = intent?.getBooleanExtra("is_confirmation", false) ?: false
         if (alarmId == -1L) {
             stopSelf()
             return START_NOT_STICKY
@@ -82,11 +85,13 @@ class AlarmService : Service() {
         )
 
         val label = if (alarm.label.isNotBlank()) alarm.label else "Alarm"
+        val title = if (isConfirmation) "⏰ Are you still awake?" else label
+        val text = if (isConfirmation) "Confirmation check — dismiss to prove you're up!" else "Alarm is ringing!"
 
         return NotificationCompat.Builder(this, AlarmScheduler.CHANNEL_ALARM)
             .setSmallIcon(R.drawable.ic_alarm)
-            .setContentTitle(label)
-            .setContentText("Alarm is ringing!")
+            .setContentTitle(title)
+            .setContentText(text)
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setFullScreenIntent(fullScreenPendingIntent, true)
@@ -162,6 +167,8 @@ class AlarmService : Service() {
             putExtra("difficulty", alarm.difficulty)
             putExtra("snooze_minutes", alarm.snoozeMinutes)
             putExtra("alarm_label", alarm.label)
+            putExtra("is_confirmation", isConfirmation)
+            putExtra("confirmation_enabled", alarm.confirmationEnabled)
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or
                     Intent.FLAG_ACTIVITY_CLEAR_TOP or
                     Intent.FLAG_ACTIVITY_SINGLE_TOP

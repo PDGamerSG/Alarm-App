@@ -15,7 +15,8 @@ data class Alarm(
     val ringtoneUri: String = "",
     val vibrateEnabled: Boolean = true,
     val snoozeMinutes: Int = 5, // 0 = disabled, 5, 10, 15
-    val difficulty: Int = DIFFICULTY_EASY
+    val difficulty: Int = DIFFICULTY_EASY,
+    val confirmationEnabled: Boolean = false // Re-ring after 5 min to confirm awake
 ) {
     companion object {
         const val DIFFICULTY_EASY = 3

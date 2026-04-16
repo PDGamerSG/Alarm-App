@@ -12,8 +12,11 @@ class AlarmReceiver : BroadcastReceiver() {
         val alarmId = intent.getLongExtra("alarm_id", -1L)
         if (alarmId == -1L) return
 
+        val isConfirmation = intent.getBooleanExtra("is_confirmation", false)
+
         val serviceIntent = Intent(context, AlarmService::class.java).apply {
             putExtra("alarm_id", alarmId)
+            putExtra("is_confirmation", isConfirmation)
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

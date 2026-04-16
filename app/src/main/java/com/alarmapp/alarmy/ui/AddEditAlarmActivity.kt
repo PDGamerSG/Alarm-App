@@ -30,6 +30,7 @@ class AddEditAlarmActivity : AppCompatActivity() {
     private lateinit var btnCancel: MaterialButton
     private lateinit var spinnerSnooze: Spinner
     private lateinit var spinnerDifficulty: Spinner
+    private lateinit var switchConfirmation: SwitchMaterial
 
     private val dayButtons = mutableListOf<ToggleButton>()
     private var selectedRingtoneUri: String = ""
@@ -64,6 +65,7 @@ class AddEditAlarmActivity : AppCompatActivity() {
         btnCancel = findViewById(R.id.btnCancel)
         spinnerSnooze = findViewById(R.id.spinnerSnooze)
         spinnerDifficulty = findViewById(R.id.spinnerDifficulty)
+        switchConfirmation = findViewById(R.id.switchConfirmation)
 
         timePicker.setIs24HourView(DateFormat.is24HourFormat(this))
 
@@ -154,6 +156,9 @@ class AddEditAlarmActivity : AppCompatActivity() {
                 }
             )
 
+            // Confirmation
+            switchConfirmation.isChecked = alarm.confirmationEnabled
+
             title = "Edit Alarm"
         }
     }
@@ -185,6 +190,8 @@ class AddEditAlarmActivity : AppCompatActivity() {
             else -> Alarm.DIFFICULTY_EASY
         }
 
+        val confirmationEnabled = switchConfirmation.isChecked
+
         val alarm = Alarm(
             id = if (editAlarmId != -1L) editAlarmId else 0,
             hour = hour,
@@ -195,7 +202,8 @@ class AddEditAlarmActivity : AppCompatActivity() {
             ringtoneUri = selectedRingtoneUri,
             vibrateEnabled = vibrate,
             snoozeMinutes = snoozeMinutes,
-            difficulty = difficulty
+            difficulty = difficulty,
+            confirmationEnabled = confirmationEnabled
         )
 
         if (editAlarmId != -1L) {

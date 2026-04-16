@@ -51,7 +51,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
-        android:text="GET READY..."
+        android:text="WAKE UP! Game starts in 5 seconds..."
         android:textColor="#6C63FF"
         android:textSize="16sp"
         android:textStyle="bold"

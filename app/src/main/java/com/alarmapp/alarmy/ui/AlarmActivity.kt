@@ -8,6 +8,7 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.Build
 import android.os.Bundle
+import android.os.CountDownTimer
 import android.os.IBinder
 import android.view.View
 import android.view.WindowInsets
@@ -36,7 +37,10 @@ class AlarmActivity : AppCompatActivity(), MemoryGameView.GameListener {
 
     private var snoozeMinutes: Int = 0
     private var alarmId: Long = -1L
+    private var isConfirmation: Boolean = false
+    private var confirmationEnabled: Boolean = false
     private val timer = Timer()
+    private var countdownTimer: CountDownTimer? = null
 
     private val totalRounds = 3
     private var currentRound = 1
@@ -67,6 +71,8 @@ class AlarmActivity : AppCompatActivity(), MemoryGameView.GameListener {
         val difficulty = intent.getIntExtra("difficulty", Alarm.DIFFICULTY_EASY)
         snoozeMinutes = intent.getIntExtra("snooze_minutes", 0)
         val label = intent.getStringExtra("alarm_label") ?: ""
+        isConfirmation = intent.getBooleanExtra("is_confirmation", false)
+        confirmationEnabled = intent.getBooleanExtra("confirmation_enabled", false)
 
         tvTime = findViewById(R.id.tvAlarmTime)
         tvLabel = findViewById(R.id.tvAlarmLabel)
@@ -77,7 +83,8 @@ class AlarmActivity : AppCompatActivity(), MemoryGameView.GameListener {
         tvRoundInfo = findViewById(R.id.tvRoundInfo)
         memoryGameView = findViewById(R.id.memoryGameView)
 
-        tvLabel.text = if (label.isNotBlank()) label else "Alarm"
+        tvLabel.text = if (isConfirmation) "Are you still awake?"
+                       else if (label.isNotBlank()) label else "Alarm"
 
         baseDifficulty = difficulty
         currentRound = 1
@@ -85,8 +92,8 @@ class AlarmActivity : AppCompatActivity(), MemoryGameView.GameListener {
         memoryGameView.listener = this
         updateRoundDisplay()
 
-        // Snooze button
-        if (snoozeMinutes > 0) {
+        // Snooze button — hidden during confirmation checks
+        if (snoozeMinutes > 0 && !isConfirmation) {
             btnSnooze.text = "Snooze ($snoozeMinutes min)"
             btnSnooze.visibility = android.view.View.VISIBLE
             btnSnooze.setOnClickListener { snooze() }
@@ -102,10 +109,8 @@ class AlarmActivity : AppCompatActivity(), MemoryGameView.GameListener {
             }
         }, 1000, 1000)
 
-        // Start the game after a short delay
-        memoryGameView.postDelayed({
-            memoryGameView.startGame()
-        }, 1000)
+        // Countdown from 5 before game starts — gives user time to wake up
+        startGameCountdown()
     }
 
     private fun setupWindowFlags() {
@@ -250,6 +255,19 @@ class AlarmActivity : AppCompatActivity(), MemoryGameView.GameListener {
         tvStatus.text = "YOUR TURN - TAP THE SEQUENCE"
     }
 
+    private fun startGameCountdown() {
+        countdownTimer = object : CountDownTimer(5000, 1000) {
+            override fun onTick(millisUntilFinished: Long) {
+                val seconds = (millisUntilFinished / 1000) + 1
+                tvStatus.text = "WAKE UP! Game starts in ${seconds}s..."
+            }
+            override fun onFinish() {
+                tvStatus.text = "GET READY..."
+                memoryGameView.startGame()
+            }
+        }.start()
+    }
+
     private fun snooze() {
         if (snoozeMinutes > 0) {
             // Reschedule alarm for snooze
@@ -271,9 +289,31 @@ class AlarmActivity : AppCompatActivity(), MemoryGameView.GameListener {
     }
 
     private fun dismissAlarm() {
+        // Schedule confirmation re-ring if enabled and this isn't already a confirmation
+        if (confirmationEnabled && !isConfirmation) {
+            scheduleConfirmationAlarm()
+        }
         AlarmService.stop(this)
         timer.cancel()
         finishAndRemoveTask()
+    }
+
+    private fun scheduleConfirmationAlarm() {
+        val alarmManager = getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
+        val intent = android.content.Intent(this, com.alarmapp.alarmy.receiver.AlarmReceiver::class.java).apply {
+            putExtra("alarm_id", alarmId)
+            putExtra("is_confirmation", true)
+        }
+        // Use a unique request code (alarm_id + 20000) to avoid conflicts with snooze
+        val pendingIntent = android.app.PendingIntent.getBroadcast(
+            this, (alarmId + 20000).toInt(), intent,
+            android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+        )
+        val triggerTime = System.currentTimeMillis() + (5 * 60 * 1000L) // 5 minutes
+        val alarmClockInfo = android.app.AlarmManager.AlarmClockInfo(triggerTime, null)
+        alarmManager.setAlarmClock(alarmClockInfo, pendingIntent)
+
+        Toast.makeText(this, "Confirmation alarm in 5 minutes", Toast.LENGTH_SHORT).show()
     }
 
     @Deprecated("Deprecated in Java")
@@ -283,6 +323,7 @@ class AlarmActivity : AppCompatActivity(), MemoryGameView.GameListener {
 
     override fun onDestroy() {
         timer.cancel()
+        countdownTimer?.cancel()
         volumeAnimator?.cancel()
         super.onDestroy()
     }

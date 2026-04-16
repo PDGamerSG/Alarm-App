@@ -19,6 +19,7 @@ object AlarmScheduler {
 
     const val CHANNEL_ALARM = "alarm_channel"
     const val CHANNEL_NEXT_ALARM = "next_alarm_channel"
+    const val CHANNEL_KEEPALIVE = "keepalive_channel"
     const val NEXT_ALARM_NOTIFICATION_ID = 9999
 
     fun schedule(context: Context, alarm: Alarm) {
@@ -186,7 +187,17 @@ object AlarmScheduler {
             description = "Persistent notification showing next alarm"
         }
 
+        val keepaliveChannel = NotificationChannel(
+            CHANNEL_KEEPALIVE,
+            "Alarm Service",
+            NotificationManager.IMPORTANCE_MIN
+        ).apply {
+            description = "Keeps alarms active in background"
+            setShowBadge(false)
+        }
+
         notificationManager.createNotificationChannel(alarmChannel)
         notificationManager.createNotificationChannel(nextAlarmChannel)
+        notificationManager.createNotificationChannel(keepaliveChannel)
     }
 }
