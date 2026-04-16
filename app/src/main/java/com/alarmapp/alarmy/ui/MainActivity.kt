@@ -56,11 +56,31 @@ class MainActivity : AppCompatActivity() {
                 startActivity(intent)
             },
             onLongClick = { alarm ->
+                val label = alarm.label.ifBlank { "Alarm" }
+                val options = arrayOf("Copy Alarm", "Delete Alarm")
                 AlertDialog.Builder(this)
-                    .setTitle("Delete Alarm")
-                    .setMessage("Delete \"${alarm.label.ifBlank { "Alarm" }}\"?")
-                    .setPositiveButton("Delete") { _, _ -> viewModel.delete(alarm) }
-                    .setNegativeButton("Cancel", null)
+                    .setTitle(label)
+                    .setItems(options) { _, which ->
+                        when (which) {
+                            0 -> {
+                                // Copy: duplicate with new ID, enabled by default
+                                val copy = alarm.copy(
+                                    id = 0,
+                                    label = if (alarm.label.isNotBlank()) "${alarm.label} (Copy)" else "",
+                                    isEnabled = true
+                                )
+                                viewModel.insert(copy)
+                            }
+                            1 -> {
+                                AlertDialog.Builder(this)
+                                    .setTitle("Delete Alarm")
+                                    .setMessage("Delete \"$label\"?")
+                                    .setPositiveButton("Delete") { _, _ -> viewModel.delete(alarm) }
+                                    .setNegativeButton("Cancel", null)
+                                    .show()
+                            }
+                        }
+                    }
                     .show()
             }
         )
