@@ -199,6 +199,17 @@ class AlarmActivity : AppCompatActivity(), MemoryGameView.GameListener {
         applyImmersiveMode()
     }
 
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        // If the activity was kept around and a new alarm (possibly the confirmation)
+        // was delivered via SINGLE_TOP, restart cleanly with the new extras so the
+        // "Are you still awake?" state is actually applied.
+        if (intent != null) {
+            setIntent(intent)
+            recreate()
+        }
+    }
+
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
         if (hasFocus) applyImmersiveMode()
@@ -223,6 +234,11 @@ class AlarmActivity : AppCompatActivity(), MemoryGameView.GameListener {
             tvStatus.text = "ALARM DISMISSED!"
             tvRoundInfo.text = "ALL DONE!"
             tvWrong.visibility = View.GONE
+            // Schedule confirmation immediately — don't wait for the fade-out runnable,
+            // which can be dropped if the view detaches before it fires.
+            if (confirmationEnabled && !isConfirmation) {
+                scheduleConfirmationAlarm()
+            }
             animateVolume(0f, durationMs = 600)
             memoryGameView.postDelayed({ dismissAlarm() }, 600)
         }
@@ -270,6 +286,9 @@ class AlarmActivity : AppCompatActivity(), MemoryGameView.GameListener {
 
     private fun snooze() {
         if (snoozeMinutes > 0) {
+            // Cancel any existing confirmation — snooze replaces it, otherwise the
+            // two alarms can fire at overlapping times and race each other.
+            cancelConfirmationAlarm()
             // Reschedule alarm for snooze
             val alarmManager = getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
             val intent = android.content.Intent(this, com.alarmapp.alarmy.receiver.AlarmReceiver::class.java).apply {
@@ -284,21 +303,34 @@ class AlarmActivity : AppCompatActivity(), MemoryGameView.GameListener {
             alarmManager.setAlarmClock(alarmClockInfo, pendingIntent)
 
             Toast.makeText(this, "Snoozed for $snoozeMinutes minutes", Toast.LENGTH_SHORT).show()
-            dismissAlarm()
+            // Bypass confirmation-scheduling — handled above. Just tear down.
+            AlarmService.stop(this)
+            timer.cancel()
+            finishAndRemoveTask()
         }
     }
 
     private fun dismissAlarm() {
-        // Schedule confirmation re-ring if enabled and this isn't already a confirmation
-        if (confirmationEnabled && !isConfirmation) {
-            scheduleConfirmationAlarm()
-        }
         AlarmService.stop(this)
         timer.cancel()
         finishAndRemoveTask()
     }
 
+    private fun cancelConfirmationAlarm() {
+        if (alarmId == -1L) return
+        val alarmManager = getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
+        val intent = android.content.Intent(this, com.alarmapp.alarmy.receiver.AlarmReceiver::class.java)
+        val pendingIntent = android.app.PendingIntent.getBroadcast(
+            this, (alarmId + 20000).toInt(), intent,
+            android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+        )
+        alarmManager.cancel(pendingIntent)
+    }
+
     private fun scheduleConfirmationAlarm() {
+        if (alarmId == -1L) return
+        // Replace any previously-pending confirmation before scheduling a new one.
+        cancelConfirmationAlarm()
         val alarmManager = getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
         val intent = android.content.Intent(this, com.alarmapp.alarmy.receiver.AlarmReceiver::class.java).apply {
             putExtra("alarm_id", alarmId)

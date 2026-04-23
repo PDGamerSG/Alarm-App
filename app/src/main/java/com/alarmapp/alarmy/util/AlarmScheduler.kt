@@ -79,6 +79,21 @@ object AlarmScheduler {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         alarmManager.cancel(pendingIntent)
+        cancelConfirmation(context, alarm)
+    }
+
+    private const val CONFIRMATION_REQUEST_OFFSET = 20000
+
+    fun cancelConfirmation(context: Context, alarm: Alarm) {
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val intent = Intent(context, AlarmReceiver::class.java)
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            alarm.id.toInt() + CONFIRMATION_REQUEST_OFFSET,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        alarmManager.cancel(pendingIntent)
     }
 
     fun getNextTriggerTime(alarm: Alarm): Long {
