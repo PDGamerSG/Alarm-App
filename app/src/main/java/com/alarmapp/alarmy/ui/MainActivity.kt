@@ -18,6 +18,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.alarmapp.alarmy.R
 import com.alarmapp.alarmy.data.AlarmViewModel
+import com.alarmapp.alarmy.util.AlarmScheduler
 import com.alarmapp.alarmy.util.PermissionHelper
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 
@@ -94,9 +95,28 @@ class MainActivity : AppCompatActivity() {
 
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
+        recyclerView.itemAnimator = null
 
+        var previousIds: Set<Long> = emptySet()
         viewModel.allAlarms.observe(this) { alarms ->
-            adapter.submitList(alarms)
+            val sorted = alarms.sortedWith(
+                compareByDescending<com.alarmapp.alarmy.data.Alarm> { it.isEnabled }
+                    .thenBy {
+                        if (it.isEnabled) AlarmScheduler.getNextTriggerTime(it) else Long.MAX_VALUE
+                    }
+                    .thenBy { it.hour }
+                    .thenBy { it.minute }
+            )
+            val currentIds = sorted.map { it.id }.toSet()
+            val addedAlarm = (currentIds - previousIds).isNotEmpty() && previousIds.isNotEmpty()
+            val isFirstLoad = previousIds.isEmpty() && sorted.isNotEmpty()
+            previousIds = currentIds
+
+            adapter.submitList(sorted) {
+                if (addedAlarm || isFirstLoad) {
+                    recyclerView.scrollToPosition(0)
+                }
+            }
             tvEmpty.visibility = if (alarms.isEmpty()) View.VISIBLE else View.GONE
         }
 
