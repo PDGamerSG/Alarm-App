@@ -18,12 +18,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.alarmapp.alarmy.R
 import com.alarmapp.alarmy.data.AlarmViewModel
-import com.alarmapp.alarmy.util.AlarmScheduler
 import com.alarmapp.alarmy.util.PermissionHelper
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
@@ -127,10 +123,6 @@ class MainActivity : AppCompatActivity() {
 
         tickHandler.removeCallbacks(tickRunnable)
         tickHandler.postDelayed(tickRunnable, millisUntilNextMinute())
-
-        CoroutineScope(Dispatchers.IO).launch {
-            AlarmScheduler.updateNextAlarmNotification(this@MainActivity)
-        }
     }
 
     override fun onPause() {

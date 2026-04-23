@@ -21,7 +21,6 @@ class AlarmViewModel(application: Application) : AndroidViewModel(application) {
         if (saved.isEnabled) {
             AlarmScheduler.schedule(getApplication(), saved)
         }
-        AlarmScheduler.updateNextAlarmNotification(getApplication())
         callback?.invoke(id)
     }
 
@@ -31,13 +30,11 @@ class AlarmViewModel(application: Application) : AndroidViewModel(application) {
         if (alarm.isEnabled) {
             AlarmScheduler.schedule(getApplication(), alarm)
         }
-        AlarmScheduler.updateNextAlarmNotification(getApplication())
     }
 
     fun delete(alarm: Alarm) = viewModelScope.launch {
         AlarmScheduler.cancel(getApplication(), alarm)
         repository.delete(alarm)
-        AlarmScheduler.updateNextAlarmNotification(getApplication())
     }
 
     fun toggleAlarm(alarm: Alarm) = viewModelScope.launch {
@@ -48,7 +45,6 @@ class AlarmViewModel(application: Application) : AndroidViewModel(application) {
         } else {
             AlarmScheduler.cancel(getApplication(), updated)
         }
-        AlarmScheduler.updateNextAlarmNotification(getApplication())
     }
 
     suspend fun getAlarmById(id: Long): Alarm? = repository.getAlarmById(id)

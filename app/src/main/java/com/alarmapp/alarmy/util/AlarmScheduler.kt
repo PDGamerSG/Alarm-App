@@ -6,8 +6,6 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import androidx.core.app.NotificationCompat
-import com.alarmapp.alarmy.R
 import com.alarmapp.alarmy.data.Alarm
 import com.alarmapp.alarmy.data.AlarmDatabase
 import com.alarmapp.alarmy.receiver.AlarmReceiver
@@ -18,9 +16,9 @@ import java.util.*
 object AlarmScheduler {
 
     const val CHANNEL_ALARM = "alarm_channel"
-    const val CHANNEL_NEXT_ALARM = "next_alarm_channel"
     const val CHANNEL_KEEPALIVE = "keepalive_channel"
-    const val NEXT_ALARM_NOTIFICATION_ID = 9999
+    private const val LEGACY_NEXT_ALARM_CHANNEL = "next_alarm_channel"
+    private const val LEGACY_NEXT_ALARM_NOTIFICATION_ID = 9999
 
     fun schedule(context: Context, alarm: Alarm) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
@@ -119,55 +117,13 @@ object AlarmScheduler {
         }
     }
 
-    suspend fun updateNextAlarmNotification(context: Context) {
-        withContext(Dispatchers.IO) {
-            val dao = AlarmDatabase.getDatabase(context).alarmDao()
-            val enabledAlarms = dao.getEnabledAlarms()
-
-            val notificationManager =
-                context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-
-            if (enabledAlarms.isEmpty()) {
-                notificationManager.cancel(NEXT_ALARM_NOTIFICATION_ID)
-                return@withContext
-            }
-
-            // Find the nearest alarm
-            val now = System.currentTimeMillis()
-            val nearest = enabledAlarms
-                .map { it to getNextTriggerTime(it) }
-                .minByOrNull { it.second }
-                ?: return@withContext
-
-            val alarm = nearest.first
-            val triggerTime = nearest.second
-
-            val cal = Calendar.getInstance().apply { timeInMillis = triggerTime }
-            val timeStr = String.format(
-                "%02d:%02d",
-                cal.get(Calendar.HOUR_OF_DAY),
-                cal.get(Calendar.MINUTE)
-            )
-
-            val label = if (alarm.label.isNotBlank()) " — ${alarm.label}" else ""
-
-            val notification = NotificationCompat.Builder(context, CHANNEL_NEXT_ALARM)
-                .setSmallIcon(R.drawable.ic_alarm)
-                .setContentTitle("Next alarm: $timeStr$label")
-                .setContentText(alarm.getRepeatDaysText())
-                .setOngoing(true)
-                .setPriority(NotificationCompat.PRIORITY_LOW)
-                .setSilent(true)
-                .setContentIntent(getShowIntent(context))
-                .build()
-
-            notificationManager.notify(NEXT_ALARM_NOTIFICATION_ID, notification)
-        }
-    }
-
     fun createNotificationChannels(context: Context) {
         val notificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        // Clean up legacy "Next alarm" notification + channel if present from older builds
+        notificationManager.cancel(LEGACY_NEXT_ALARM_NOTIFICATION_ID)
+        runCatching { notificationManager.deleteNotificationChannel(LEGACY_NEXT_ALARM_CHANNEL) }
 
         val alarmChannel = NotificationChannel(
             CHANNEL_ALARM,
@@ -177,14 +133,6 @@ object AlarmScheduler {
             description = "Alarm firing notifications"
             setBypassDnd(true)
             lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
-        }
-
-        val nextAlarmChannel = NotificationChannel(
-            CHANNEL_NEXT_ALARM,
-            "Next Alarm",
-            NotificationManager.IMPORTANCE_LOW
-        ).apply {
-            description = "Persistent notification showing next alarm"
         }
 
         val keepaliveChannel = NotificationChannel(
@@ -197,7 +145,6 @@ object AlarmScheduler {
         }
 
         notificationManager.createNotificationChannel(alarmChannel)
-        notificationManager.createNotificationChannel(nextAlarmChannel)
         notificationManager.createNotificationChannel(keepaliveChannel)
     }
 }

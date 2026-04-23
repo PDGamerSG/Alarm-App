@@ -68,7 +68,6 @@ class AlarmService : Service() {
                 // Disable one-time alarm
                 dao.update(alarm.copy(isEnabled = false))
             }
-            AlarmScheduler.updateNextAlarmNotification(applicationContext)
         }
 
         return START_STICKY

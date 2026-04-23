@@ -23,7 +23,6 @@ class BootReceiver : BroadcastReceiver() {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
                     AlarmScheduler.rescheduleAllAlarms(context)
-                    AlarmScheduler.updateNextAlarmNotification(context)
                 } finally {
                     pendingResult.finish()
                 }
