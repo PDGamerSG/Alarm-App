@@ -10,6 +10,7 @@ import android.text.format.DateFormat
 import android.view.View
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -34,7 +35,8 @@ class MainActivity : AppCompatActivity() {
     private val tickRunnable = object : Runnable {
         override fun run() {
             adapter.refreshTimeLeft()
-            tickHandler.postDelayed(this, 60_000L)
+            val delay = if (adapter.hasActivePendingDisable()) 1_000L else 60_000L
+            tickHandler.postDelayed(this, delay)
         }
     }
 
@@ -56,7 +58,26 @@ class MainActivity : AppCompatActivity() {
 
         val recyclerView = findViewById<RecyclerView>(R.id.recyclerAlarms)
         adapter = AlarmAdapter(
-            onToggle = { alarm -> viewModel.toggleAlarm(alarm) },
+            onToggle = { alarm ->
+                val pendingActive = alarm.pendingDisableAt > System.currentTimeMillis()
+                when {
+                    // Tapping switch while pending → cancel the pending disable
+                    pendingActive -> {
+                        viewModel.cancelPendingDisable(alarm)
+                        Toast.makeText(this, "Pending disable cancelled", Toast.LENGTH_SHORT).show()
+                    }
+                    // Disabling a protected enabled alarm → schedule delayed disable
+                    alarm.isEnabled && alarm.isProtected -> {
+                        viewModel.schedulePendingDisable(alarm)
+                        Toast.makeText(
+                            this,
+                            "Protected alarm — disabling in 10 minutes. Tap Cancel to reverse.",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                    else -> viewModel.toggleAlarm(alarm)
+                }
+            },
             onClick = { alarm ->
                 val intent = Intent(this, AddEditAlarmActivity::class.java)
                 intent.putExtra("alarm_id", alarm.id)
@@ -70,25 +91,37 @@ class MainActivity : AppCompatActivity() {
                     .setItems(options) { _, which ->
                         when (which) {
                             0 -> {
-                                // Copy: duplicate with new ID, enabled by default
                                 val copy = alarm.copy(
                                     id = 0,
                                     label = if (alarm.label.isNotBlank()) "${alarm.label} (Copy)" else "",
-                                    isEnabled = true
+                                    isEnabled = true,
+                                    pendingDisableAt = 0L
                                 )
                                 viewModel.insert(copy)
                             }
                             1 -> {
-                                AlertDialog.Builder(this)
-                                    .setTitle("Delete Alarm")
-                                    .setMessage("Delete \"$label\"?")
-                                    .setPositiveButton("Delete") { _, _ -> viewModel.delete(alarm) }
-                                    .setNegativeButton("Cancel", null)
-                                    .show()
+                                if (alarm.isProtected && alarm.isEnabled) {
+                                    Toast.makeText(
+                                        this,
+                                        "Protected alarm — disable it first (10-min delay).",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                } else {
+                                    AlertDialog.Builder(this)
+                                        .setTitle("Delete Alarm")
+                                        .setMessage("Delete \"$label\"?")
+                                        .setPositiveButton("Delete") { _, _ -> viewModel.delete(alarm) }
+                                        .setNegativeButton("Cancel", null)
+                                        .show()
+                                }
                             }
                         }
                     }
                     .show()
+            },
+            onCancelPendingDisable = { alarm ->
+                viewModel.cancelPendingDisable(alarm)
+                Toast.makeText(this, "Pending disable cancelled", Toast.LENGTH_SHORT).show()
             }
         )
         adapter.use24Hour = DateFormat.is24HourFormat(this)
@@ -116,6 +149,10 @@ class MainActivity : AppCompatActivity() {
                 if (addedAlarm || isFirstLoad) {
                     recyclerView.scrollToPosition(0)
                 }
+                // Re-pace tick based on whether any pending countdown is active
+                tickHandler.removeCallbacks(tickRunnable)
+                val delay = if (adapter.hasActivePendingDisable()) 1_000L else millisUntilNextMinute()
+                tickHandler.postDelayed(tickRunnable, delay)
             }
             tvEmpty.visibility = if (alarms.isEmpty()) View.VISIBLE else View.GONE
         }
@@ -142,7 +179,8 @@ class MainActivity : AppCompatActivity() {
         adapter.notifyDataSetChanged()
 
         tickHandler.removeCallbacks(tickRunnable)
-        tickHandler.postDelayed(tickRunnable, millisUntilNextMinute())
+        val initialDelay = if (adapter.hasActivePendingDisable()) 1_000L else millisUntilNextMinute()
+        tickHandler.postDelayed(tickRunnable, initialDelay)
     }
 
     override fun onPause() {

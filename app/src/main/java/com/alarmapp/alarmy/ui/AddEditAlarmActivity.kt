@@ -31,6 +31,8 @@ class AddEditAlarmActivity : AppCompatActivity() {
     private lateinit var spinnerSnooze: Spinner
     private lateinit var spinnerDifficulty: Spinner
     private lateinit var switchConfirmation: SwitchMaterial
+    private lateinit var switchProtected: SwitchMaterial
+    private var existingPendingDisableAt: Long = 0L
 
     private val dayButtons = mutableListOf<ToggleButton>()
     private var selectedRingtoneUri: String = ""
@@ -66,6 +68,7 @@ class AddEditAlarmActivity : AppCompatActivity() {
         spinnerSnooze = findViewById(R.id.spinnerSnooze)
         spinnerDifficulty = findViewById(R.id.spinnerDifficulty)
         switchConfirmation = findViewById(R.id.switchConfirmation)
+        switchProtected = findViewById(R.id.switchProtected)
 
         timePicker.setIs24HourView(DateFormat.is24HourFormat(this))
 
@@ -159,6 +162,10 @@ class AddEditAlarmActivity : AppCompatActivity() {
             // Confirmation
             switchConfirmation.isChecked = alarm.confirmationEnabled
 
+            // Protected
+            switchProtected.isChecked = alarm.isProtected
+            existingPendingDisableAt = alarm.pendingDisableAt
+
             title = "Edit Alarm"
         }
     }
@@ -191,6 +198,7 @@ class AddEditAlarmActivity : AppCompatActivity() {
         }
 
         val confirmationEnabled = switchConfirmation.isChecked
+        val isProtected = switchProtected.isChecked
 
         val alarm = Alarm(
             id = if (editAlarmId != -1L) editAlarmId else 0,
@@ -203,7 +211,10 @@ class AddEditAlarmActivity : AppCompatActivity() {
             vibrateEnabled = vibrate,
             snoozeMinutes = snoozeMinutes,
             difficulty = difficulty,
-            confirmationEnabled = confirmationEnabled
+            confirmationEnabled = confirmationEnabled,
+            isProtected = isProtected,
+            // editing clears any pending disable
+            pendingDisableAt = 0L
         )
 
         if (editAlarmId != -1L) {

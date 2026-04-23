@@ -3,6 +3,7 @@ package com.alarmapp.alarmy.ui
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.widget.SwitchCompat
 import androidx.recyclerview.widget.DiffUtil
@@ -15,7 +16,8 @@ import com.alarmapp.alarmy.util.AlarmScheduler
 class AlarmAdapter(
     private val onToggle: (Alarm) -> Unit,
     private val onClick: (Alarm) -> Unit,
-    private val onLongClick: (Alarm) -> Unit
+    private val onLongClick: (Alarm) -> Unit,
+    private val onCancelPendingDisable: (Alarm) -> Unit
 ) : ListAdapter<Alarm, AlarmAdapter.AlarmViewHolder>(AlarmDiffCallback()) {
 
     var use24Hour: Boolean = false
@@ -26,6 +28,9 @@ class AlarmAdapter(
         val tvLabel: TextView = view.findViewById(R.id.tvAlarmItemLabel)
         val tvDays: TextView = view.findViewById(R.id.tvAlarmItemDays)
         val tvTimeLeft: TextView = view.findViewById(R.id.tvAlarmItemTimeLeft)
+        val pendingContainer: LinearLayout = view.findViewById(R.id.pendingDisableContainer)
+        val tvPending: TextView = view.findViewById(R.id.tvPendingDisable)
+        val btnCancelPending: TextView = view.findViewById(R.id.btnCancelPendingDisable)
         val switchEnabled: SwitchCompat = view.findViewById(R.id.switchAlarmEnabled)
     }
 
@@ -51,12 +56,24 @@ class AlarmAdapter(
         holder.tvLabel.text = alarm.label.ifBlank { "Alarm" }
         holder.tvDays.text = alarm.getRepeatDaysText()
 
+        val now = System.currentTimeMillis()
+        val pendingActive = alarm.isEnabled && alarm.pendingDisableAt > now
+
         if (alarm.isEnabled) {
             val triggerTime = AlarmScheduler.getNextTriggerTime(alarm)
-            holder.tvTimeLeft.text = formatTimeLeft(triggerTime - System.currentTimeMillis())
+            holder.tvTimeLeft.text = formatTimeLeft(triggerTime - now)
             holder.tvTimeLeft.visibility = View.VISIBLE
         } else {
             holder.tvTimeLeft.visibility = View.GONE
+        }
+
+        if (pendingActive) {
+            holder.pendingContainer.visibility = View.VISIBLE
+            holder.tvPending.text = "Disabling in ${formatShortDuration(alarm.pendingDisableAt - now)}"
+            holder.btnCancelPending.setOnClickListener { onCancelPendingDisable(alarm) }
+        } else {
+            holder.pendingContainer.visibility = View.GONE
+            holder.btnCancelPending.setOnClickListener(null)
         }
 
         holder.switchEnabled.setOnCheckedChangeListener(null)
@@ -83,8 +100,25 @@ class AlarmAdapter(
         notifyItemRangeChanged(0, itemCount, PAYLOAD_TIME_LEFT)
     }
 
+    fun hasActivePendingDisable(): Boolean {
+        val now = System.currentTimeMillis()
+        for (i in 0 until itemCount) {
+            val a = getItem(i)
+            if (a.isEnabled && a.pendingDisableAt > now) return true
+        }
+        return false
+    }
+
     companion object {
         private const val PAYLOAD_TIME_LEFT = "time_left"
+
+        private fun formatShortDuration(millis: Long): String {
+            if (millis <= 0L) return "0s"
+            val totalSeconds = (millis + 999L) / 1000L // round up
+            val minutes = totalSeconds / 60
+            val seconds = totalSeconds % 60
+            return if (minutes > 0) "${minutes}m ${seconds}s" else "${seconds}s"
+        }
 
         private fun formatTimeLeft(millis: Long): String {
             if (millis <= 0L) return "Ringing soon"

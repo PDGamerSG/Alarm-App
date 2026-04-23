@@ -9,6 +9,7 @@ import android.content.Intent
 import com.alarmapp.alarmy.data.Alarm
 import com.alarmapp.alarmy.data.AlarmDatabase
 import com.alarmapp.alarmy.receiver.AlarmReceiver
+import com.alarmapp.alarmy.receiver.PendingDisableReceiver
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.*
@@ -37,6 +38,35 @@ object AlarmScheduler {
         // Use setAlarmClock for highest priority — survives Doze
         val alarmClockInfo = AlarmManager.AlarmClockInfo(triggerTime, getShowIntent(context))
         alarmManager.setAlarmClock(alarmClockInfo, pendingIntent)
+    }
+
+    private const val PENDING_DISABLE_REQUEST_OFFSET = 30000
+
+    fun schedulePendingDisable(context: Context, alarm: Alarm, triggerAt: Long) {
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val intent = Intent(context, PendingDisableReceiver::class.java).apply {
+            putExtra("alarm_id", alarm.id)
+        }
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            alarm.id.toInt() + PENDING_DISABLE_REQUEST_OFFSET,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        // Use exact alarm so delay survives Doze
+        alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent)
+    }
+
+    fun cancelPendingDisable(context: Context, alarm: Alarm) {
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val intent = Intent(context, PendingDisableReceiver::class.java)
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            alarm.id.toInt() + PENDING_DISABLE_REQUEST_OFFSET,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        alarmManager.cancel(pendingIntent)
     }
 
     fun cancel(context: Context, alarm: Alarm) {

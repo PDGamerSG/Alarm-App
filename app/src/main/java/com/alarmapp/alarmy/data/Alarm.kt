@@ -16,9 +16,12 @@ data class Alarm(
     val vibrateEnabled: Boolean = true,
     val snoozeMinutes: Int = 5, // 0 = disabled, 5, 10, 15
     val difficulty: Int = DIFFICULTY_EASY,
-    val confirmationEnabled: Boolean = false // Re-ring after 5 min to confirm awake
+    val confirmationEnabled: Boolean = false, // Re-ring after 5 min to confirm awake
+    val isProtected: Boolean = false, // Disabling requires a 10-min delay
+    val pendingDisableAt: Long = 0L // epoch millis; 0 = not pending
 ) {
     companion object {
+        const val PROTECTED_DISABLE_DELAY_MS = 10 * 60 * 1000L
         const val DIFFICULTY_EASY = 3
         const val DIFFICULTY_MEDIUM = 5
         const val DIFFICULTY_HARD = 7
