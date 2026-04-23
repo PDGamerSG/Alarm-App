@@ -10,6 +10,7 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.alarmapp.alarmy.R
 import com.alarmapp.alarmy.data.Alarm
+import com.alarmapp.alarmy.util.AlarmScheduler
 
 class AlarmAdapter(
     private val onToggle: (Alarm) -> Unit,
@@ -24,6 +25,7 @@ class AlarmAdapter(
         val tvAmPm: TextView = view.findViewById(R.id.tvAlarmItemAmPm)
         val tvLabel: TextView = view.findViewById(R.id.tvAlarmItemLabel)
         val tvDays: TextView = view.findViewById(R.id.tvAlarmItemDays)
+        val tvTimeLeft: TextView = view.findViewById(R.id.tvAlarmItemTimeLeft)
         val switchEnabled: SwitchCompat = view.findViewById(R.id.switchAlarmEnabled)
     }
 
@@ -49,6 +51,14 @@ class AlarmAdapter(
         holder.tvLabel.text = alarm.label.ifBlank { "Alarm" }
         holder.tvDays.text = alarm.getRepeatDaysText()
 
+        if (alarm.isEnabled) {
+            val triggerTime = AlarmScheduler.getNextTriggerTime(alarm)
+            holder.tvTimeLeft.text = formatTimeLeft(triggerTime - System.currentTimeMillis())
+            holder.tvTimeLeft.visibility = View.VISIBLE
+        } else {
+            holder.tvTimeLeft.visibility = View.GONE
+        }
+
         holder.switchEnabled.setOnCheckedChangeListener(null)
         holder.switchEnabled.isChecked = alarm.isEnabled
         holder.switchEnabled.setOnCheckedChangeListener { _, _ ->
@@ -60,11 +70,45 @@ class AlarmAdapter(
         holder.tvAmPm.alpha = alpha
         holder.tvLabel.alpha = alpha
         holder.tvDays.alpha = alpha
+        holder.tvTimeLeft.alpha = alpha
 
         holder.itemView.setOnClickListener { onClick(alarm) }
         holder.itemView.setOnLongClickListener {
             onLongClick(alarm)
             true
+        }
+    }
+
+    fun refreshTimeLeft() {
+        notifyItemRangeChanged(0, itemCount, PAYLOAD_TIME_LEFT)
+    }
+
+    companion object {
+        private const val PAYLOAD_TIME_LEFT = "time_left"
+
+        private fun formatTimeLeft(millis: Long): String {
+            if (millis <= 0L) return "Ringing soon"
+            val totalMinutes = (millis / 60_000L) + 1 // round up
+            val days = totalMinutes / (24 * 60)
+            val hours = (totalMinutes % (24 * 60)) / 60
+            val minutes = totalMinutes % 60
+
+            val parts = buildString {
+                append("Rings in ")
+                when {
+                    days > 0 -> {
+                        append("${days}d")
+                        if (hours > 0) append(" ${hours}h")
+                    }
+                    hours > 0 -> {
+                        append("${hours}h")
+                        if (minutes > 0) append(" ${minutes}m")
+                    }
+                    minutes > 1 -> append("${minutes}m")
+                    else -> append("less than 1m")
+                }
+            }
+            return parts
         }
     }
 }

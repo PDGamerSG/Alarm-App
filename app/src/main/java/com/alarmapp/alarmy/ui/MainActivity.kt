@@ -4,6 +4,8 @@ import android.Manifest
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.text.format.DateFormat
 import android.view.View
 import android.widget.LinearLayout
@@ -30,6 +32,14 @@ class MainActivity : AppCompatActivity() {
     private lateinit var warningBanner: LinearLayout
     private lateinit var tvWarning: TextView
     private lateinit var tvEmpty: TextView
+
+    private val tickHandler = Handler(Looper.getMainLooper())
+    private val tickRunnable = object : Runnable {
+        override fun run() {
+            adapter.refreshTimeLeft()
+            tickHandler.postDelayed(this, 60_000L)
+        }
+    }
 
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -115,9 +125,22 @@ class MainActivity : AppCompatActivity() {
         adapter.use24Hour = DateFormat.is24HourFormat(this)
         adapter.notifyDataSetChanged()
 
+        tickHandler.removeCallbacks(tickRunnable)
+        tickHandler.postDelayed(tickRunnable, millisUntilNextMinute())
+
         CoroutineScope(Dispatchers.IO).launch {
             AlarmScheduler.updateNextAlarmNotification(this@MainActivity)
         }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        tickHandler.removeCallbacks(tickRunnable)
+    }
+
+    private fun millisUntilNextMinute(): Long {
+        val now = System.currentTimeMillis()
+        return 60_000L - (now % 60_000L)
     }
 
     private fun updatePermissionWarning() {
