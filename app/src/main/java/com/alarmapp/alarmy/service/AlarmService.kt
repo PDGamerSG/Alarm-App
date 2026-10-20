@@ -76,6 +76,12 @@ class AlarmService : Service() {
     private fun buildNotification(alarm: Alarm): Notification {
         val fullScreenIntent = Intent(this, AlarmActivity::class.java).apply {
             putExtra("alarm_id", alarm.id)
+            putExtra("difficulty", alarm.difficulty)
+            putExtra("snooze_minutes", alarm.snoozeMinutes)
+            putExtra("alarm_label", alarm.label)
+            putExtra("nfc_tag_id", alarm.nfcTagId)
+            putExtra("is_confirmation", isConfirmation)
+            putExtra("confirmation_enabled", alarm.confirmationEnabled)
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
         val fullScreenPendingIntent = PendingIntent.getActivity(
@@ -166,6 +172,7 @@ class AlarmService : Service() {
             putExtra("difficulty", alarm.difficulty)
             putExtra("snooze_minutes", alarm.snoozeMinutes)
             putExtra("alarm_label", alarm.label)
+            putExtra("nfc_tag_id", alarm.nfcTagId)
             putExtra("is_confirmation", isConfirmation)
             putExtra("confirmation_enabled", alarm.confirmationEnabled)
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or

@@ -10,6 +10,7 @@ A reliable Android alarm app built with Kotlin, MVVM architecture, and Room Data
 - **Snooze** with configurable delay (5/10/15 min or disabled)
 - **Persistent notification** showing next upcoming alarm
 - **Memory Pattern Dismiss Challenge** — 3x3 grid game with Easy/Medium/Hard difficulty
+- **NFC tag dismissal** — assign a physical NFC tag to an alarm and tap it on the ringing alarm screen
 - **Dark theme** by default
 - **Survives Doze, battery saver, app kill, and device restart**
 
@@ -33,6 +34,7 @@ A reliable Android alarm app built with Kotlin, MVVM architecture, and Room Data
 | `FOREGROUND_SERVICE` + `FOREGROUND_SERVICE_MEDIA_PLAYBACK` | Keep alarm sound playing reliably |
 | `POST_NOTIFICATIONS` | Show alarm and next-alarm notifications (Android 13+) |
 | `VIBRATE` | Vibrate on alarm |
+| `NFC` | Read the assigned NFC tag while the ringing alarm screen is in the foreground |
 | **Device Admin** | Prevents force-stop of the app |
 
 On first launch, the app prompts for all critical permissions. A warning banner appears on the home screen if any are missing.
@@ -101,6 +103,14 @@ The dismiss challenge shows a 3x3 grid. Blocks highlight one by one in a random 
 - **Hard**: 7 blocks in sequence
 
 Wrong taps trigger a shake animation, reset the sequence with a new random pattern, and increment the attempt counter. The alarm keeps ringing until the pattern is completed correctly.
+
+## NFC Tag Dismissal
+
+NFC is optional. On a phone with NFC enabled, edit an alarm and tap **Scan NFC Tag**, then hold the tag near the phone until its identifier is shown. Save the alarm. When that alarm rings, touching the same tag to the phone dismisses the alarm immediately; a different tag is ignored and the memory challenge remains available.
+
+The app uses Android's foreground reader mode (`NfcAdapter.enableReaderMode`) and the tag identifier (`Tag.getId()`), so the tag does not need to be formatted or written. Reader mode is enabled only while the alarm activity is visible and is disabled when it leaves the foreground. Tag identifiers are suitable for convenience, not as a cryptographic secret: some tag types can expose a changeable or randomized identifier.
+
+NFC dismissal requires the phone's NFC radio to be enabled. Devices without NFC continue to use the existing memory challenge.
 
 ## Build
 

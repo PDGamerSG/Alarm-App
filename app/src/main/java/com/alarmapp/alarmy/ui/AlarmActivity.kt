@@ -6,6 +6,8 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
+import android.nfc.NfcAdapter
+import android.nfc.Tag
 import android.os.Build
 import android.os.Bundle
 import android.os.CountDownTimer
@@ -21,6 +23,7 @@ import com.alarmapp.alarmy.R
 import com.alarmapp.alarmy.data.Alarm
 import com.alarmapp.alarmy.game.MemoryGameView
 import com.alarmapp.alarmy.service.AlarmService
+import com.alarmapp.alarmy.util.NfcTagUtils
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -30,6 +33,7 @@ class AlarmActivity : AppCompatActivity(), MemoryGameView.GameListener {
     private lateinit var tvTime: TextView
     private lateinit var tvLabel: TextView
     private lateinit var tvStatus: TextView
+    private lateinit var tvNfcHint: TextView
     private lateinit var tvAttempts: TextView
     private lateinit var tvWrong: TextView
     private lateinit var btnSnooze: TextView
@@ -39,6 +43,30 @@ class AlarmActivity : AppCompatActivity(), MemoryGameView.GameListener {
     private var alarmId: Long = -1L
     private var isConfirmation: Boolean = false
     private var confirmationEnabled: Boolean = false
+    private var nfcTagId: String = ""
+    private var nfcDismissed = false
+    private val nfcAdapter: NfcAdapter? by lazy { NfcAdapter.getDefaultAdapter(this) }
+    private val nfcReaderCallback = NfcAdapter.ReaderCallback { tag ->
+        val scannedId = NfcTagUtils.canonicalId(tag)
+        runOnUiThread {
+            if (nfcDismissed || isFinishing || isDestroyed) return@runOnUiThread
+            if (nfcTagId.isNotBlank() && scannedId == nfcTagId) {
+                nfcDismissed = true
+                tvStatus.text = "NFC TAG ACCEPTED — ALARM DISMISSED"
+                tvNfcHint.visibility = View.GONE
+                tvRoundInfo.text = "NFC DISMISS"
+                tvWrong.visibility = View.GONE
+                memoryGameView.isEnabled = false
+                if (confirmationEnabled && !isConfirmation) {
+                    scheduleConfirmationAlarm()
+                }
+                animateVolume(0f, durationMs = 250)
+                memoryGameView.postDelayed({ dismissAlarm() }, 250)
+            } else if (nfcTagId.isNotBlank()) {
+                Toast.makeText(this, "This tag is not assigned to this alarm", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
     private val timer = Timer()
     private var countdownTimer: CountDownTimer? = null
 
@@ -73,15 +101,18 @@ class AlarmActivity : AppCompatActivity(), MemoryGameView.GameListener {
         val label = intent.getStringExtra("alarm_label") ?: ""
         isConfirmation = intent.getBooleanExtra("is_confirmation", false)
         confirmationEnabled = intent.getBooleanExtra("confirmation_enabled", false)
+        nfcTagId = intent.getStringExtra("nfc_tag_id")?.uppercase(Locale.ROOT) ?: ""
 
         tvTime = findViewById(R.id.tvAlarmTime)
         tvLabel = findViewById(R.id.tvAlarmLabel)
         tvStatus = findViewById(R.id.tvGameStatus)
+        tvNfcHint = findViewById(R.id.tvNfcHint)
         tvAttempts = findViewById(R.id.tvAttempts)
         tvWrong = findViewById(R.id.tvWrong)
         btnSnooze = findViewById(R.id.btnSnooze)
         tvRoundInfo = findViewById(R.id.tvRoundInfo)
         memoryGameView = findViewById(R.id.memoryGameView)
+        tvNfcHint.visibility = if (nfcTagId.isNotBlank()) View.VISIBLE else View.GONE
 
         tvLabel.text = if (isConfirmation) "Are you still awake?"
                        else if (label.isNotBlank()) label else "Alarm"
@@ -197,6 +228,36 @@ class AlarmActivity : AppCompatActivity(), MemoryGameView.GameListener {
     override fun onResume() {
         super.onResume()
         applyImmersiveMode()
+        enableNfcReaderMode()
+    }
+
+    override fun onPause() {
+        disableNfcReaderMode()
+        super.onPause()
+    }
+
+    private fun enableNfcReaderMode() {
+        if (nfcTagId.isBlank()) return
+        val adapter = nfcAdapter ?: return
+        if (!adapter.isEnabled) return
+        runCatching {
+            adapter.enableReaderMode(
+                this,
+                nfcReaderCallback,
+                NfcAdapter.FLAG_READER_NFC_A or
+                    NfcAdapter.FLAG_READER_NFC_B or
+                    NfcAdapter.FLAG_READER_NFC_F or
+                    NfcAdapter.FLAG_READER_NFC_V or
+                    NfcAdapter.FLAG_READER_NFC_BARCODE or
+                    NfcAdapter.FLAG_READER_NO_PLATFORM_SOUNDS or
+                    NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK,
+                null
+            )
+        }
+    }
+
+    private fun disableNfcReaderMode() {
+        runCatching { nfcAdapter?.disableReaderMode(this) }
     }
 
     override fun onNewIntent(intent: Intent?) {

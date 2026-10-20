@@ -57,6 +57,16 @@
         android:textStyle="bold"
         android:letterSpacing="0.1" />
 
+    <TextView
+        android:id="@+id/tvNfcHint"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Tap the assigned NFC tag to dismiss"
+        android:textColor="#B0B3C5"
+        android:textSize="13sp"
+        android:visibility="gone" />
+
     <!-- Wrong indicator -->
     <TextView
         android:id="@+id/tvWrong"

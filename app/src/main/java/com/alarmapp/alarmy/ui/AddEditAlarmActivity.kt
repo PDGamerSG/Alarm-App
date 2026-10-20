@@ -4,6 +4,8 @@ import android.app.Activity
 import android.content.Intent
 import android.media.RingtoneManager
 import android.net.Uri
+import android.nfc.NfcAdapter
+import android.nfc.Tag
 import android.os.Bundle
 import android.text.format.DateFormat
 import android.widget.*
@@ -14,6 +16,7 @@ import androidx.lifecycle.lifecycleScope
 import com.alarmapp.alarmy.R
 import com.alarmapp.alarmy.data.Alarm
 import com.alarmapp.alarmy.data.AlarmViewModel
+import com.alarmapp.alarmy.util.NfcTagUtils
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.switchmaterial.SwitchMaterial
 import com.google.android.material.textfield.TextInputEditText
@@ -32,11 +35,28 @@ class AddEditAlarmActivity : AppCompatActivity() {
     private lateinit var spinnerDifficulty: Spinner
     private lateinit var switchConfirmation: SwitchMaterial
     private lateinit var switchProtected: SwitchMaterial
+    private lateinit var tvNfcTag: TextView
+    private lateinit var btnSetNfc: MaterialButton
+    private lateinit var btnClearNfc: MaterialButton
     private var existingPendingDisableAt: Long = 0L
 
     private val dayButtons = mutableListOf<ToggleButton>()
     private var selectedRingtoneUri: String = ""
     private var editAlarmId: Long = -1L
+    private var nfcTagId: String = ""
+    private var waitingForNfc = false
+    private val nfcAdapter: NfcAdapter? by lazy { NfcAdapter.getDefaultAdapter(this) }
+    private val nfcReaderCallback = NfcAdapter.ReaderCallback { tag: Tag ->
+        val scannedId = NfcTagUtils.canonicalId(tag)
+        runOnUiThread {
+            if (!waitingForNfc) return@runOnUiThread
+            waitingForNfc = false
+            disableNfcReaderMode()
+            nfcTagId = scannedId
+            updateNfcStatus()
+            Toast.makeText(this, "NFC tag assigned to this alarm", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     private val ringtonePickerLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -69,6 +89,18 @@ class AddEditAlarmActivity : AppCompatActivity() {
         spinnerDifficulty = findViewById(R.id.spinnerDifficulty)
         switchConfirmation = findViewById(R.id.switchConfirmation)
         switchProtected = findViewById(R.id.switchProtected)
+        tvNfcTag = findViewById(R.id.tvNfcTag)
+        btnSetNfc = findViewById(R.id.btnSetNfc)
+        btnClearNfc = findViewById(R.id.btnClearNfc)
+
+        btnSetNfc.setOnClickListener { startNfcCapture() }
+        btnClearNfc.setOnClickListener {
+            waitingForNfc = false
+            disableNfcReaderMode()
+            nfcTagId = ""
+            updateNfcStatus()
+        }
+        updateNfcStatus()
 
         timePicker.setIs24HourView(DateFormat.is24HourFormat(this))
 
@@ -165,6 +197,8 @@ class AddEditAlarmActivity : AppCompatActivity() {
             // Protected
             switchProtected.isChecked = alarm.isProtected
             existingPendingDisableAt = alarm.pendingDisableAt
+            nfcTagId = alarm.nfcTagId
+            updateNfcStatus()
 
             title = "Edit Alarm"
         }
@@ -214,7 +248,8 @@ class AddEditAlarmActivity : AppCompatActivity() {
             confirmationEnabled = confirmationEnabled,
             isProtected = isProtected,
             // editing clears any pending disable
-            pendingDisableAt = 0L
+            pendingDisableAt = 0L,
+            nfcTagId = nfcTagId
         )
 
         if (editAlarmId != -1L) {
@@ -224,5 +259,57 @@ class AddEditAlarmActivity : AppCompatActivity() {
         }
 
         finish()
+    }
+
+    private fun updateNfcStatus() {
+        if (!::tvNfcTag.isInitialized) return
+        tvNfcTag.text = when {
+            waitingForNfc -> "Hold the tag to the back of your phone..."
+            nfcTagId.isNotBlank() -> "Assigned tag: ${nfcTagId.chunked(2).joinToString(":")}"
+            else -> "No tag assigned"
+        }
+        btnClearNfc.isEnabled = nfcTagId.isNotBlank()
+    }
+
+    private fun startNfcCapture() {
+        val adapter = nfcAdapter
+        if (adapter == null) {
+            Toast.makeText(this, "This device does not support NFC", Toast.LENGTH_LONG).show()
+            return
+        }
+        if (!adapter.isEnabled) {
+            Toast.makeText(this, "Turn on NFC in system settings, then try again", Toast.LENGTH_LONG).show()
+            return
+        }
+        waitingForNfc = true
+        updateNfcStatus()
+        runCatching {
+            adapter.enableReaderMode(
+                this,
+                nfcReaderCallback,
+                NfcAdapter.FLAG_READER_NFC_A or
+                    NfcAdapter.FLAG_READER_NFC_B or
+                    NfcAdapter.FLAG_READER_NFC_F or
+                    NfcAdapter.FLAG_READER_NFC_V or
+                    NfcAdapter.FLAG_READER_NFC_BARCODE or
+                    NfcAdapter.FLAG_READER_NO_PLATFORM_SOUNDS or
+                    NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK,
+                null
+            )
+        }.onFailure {
+            waitingForNfc = false
+            updateNfcStatus()
+            Toast.makeText(this, "Unable to start NFC reader", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun disableNfcReaderMode() {
+        runCatching { nfcAdapter?.disableReaderMode(this) }
+    }
+
+    override fun onPause() {
+        waitingForNfc = false
+        disableNfcReaderMode()
+        super.onPause()
     }
 }
