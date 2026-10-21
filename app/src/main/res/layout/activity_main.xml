@@ -50,6 +50,19 @@
                 android:textSize="14sp" />
         </LinearLayout>
 
+        <TextView
+            android:id="@+id/tvPowerStateNotice"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/power_notice_bg"
+            android:paddingStart="12dp"
+            android:paddingTop="8dp"
+            android:paddingEnd="12dp"
+            android:paddingBottom="8dp"
+            android:text="Keep the phone powered on for alarms. Android cannot power on a fully shut-down phone."
+            android:textColor="@color/power_notice_text"
+            android:textSize="12sp" />
+
         <!-- Empty state -->
         <TextView
             android:id="@+id/tvEmpty"

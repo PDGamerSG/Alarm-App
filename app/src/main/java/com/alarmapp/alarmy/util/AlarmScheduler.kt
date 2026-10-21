@@ -35,7 +35,9 @@ object AlarmScheduler {
 
         val triggerTime = getNextTriggerTime(alarm)
 
-        // Use setAlarmClock for highest priority — survives Doze
+        // setAlarmClock is the strongest public API for an alarm app: it can wake
+        // the device from screen-off/Doze and is visible as an alarm-clock event.
+        // Android does not expose a public API that powers on a fully shut-down phone.
         val alarmClockInfo = AlarmManager.AlarmClockInfo(triggerTime, getShowIntent(context))
         alarmManager.setAlarmClock(alarmClockInfo, pendingIntent)
     }

@@ -29,6 +29,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var adapter: AlarmAdapter
     private lateinit var warningBanner: LinearLayout
     private lateinit var tvWarning: TextView
+    private lateinit var tvPowerStateNotice: TextView
     private lateinit var tvEmpty: TextView
 
     private val tickHandler = Handler(Looper.getMainLooper())
@@ -54,6 +55,16 @@ class MainActivity : AppCompatActivity() {
 
         warningBanner = findViewById(R.id.warningBanner)
         tvWarning = findViewById(R.id.tvWarning)
+        tvPowerStateNotice = findViewById(R.id.tvPowerStateNotice)
+        tvPowerStateNotice.setOnClickListener {
+            AlertDialog.Builder(this)
+                .setTitle("Keep the phone powered on")
+                .setMessage(
+                    "Android alarms can wake the screen from sleep and Doze, but a fully powered-off phone cannot run apps or receive alarms. Keep the phone powered on and charged. After restarting the phone, Alarmy reschedules enabled alarms automatically."
+                )
+                .setPositiveButton("OK", null)
+                .show()
+        }
         tvEmpty = findViewById(R.id.tvEmpty)
 
         val recyclerView = findViewById<RecyclerView>(R.id.recyclerAlarms)

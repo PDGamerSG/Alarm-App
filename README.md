@@ -29,7 +29,7 @@ A reliable Android alarm app built with Kotlin, MVVM architecture, and Room Data
 | `SCHEDULE_EXACT_ALARM` / `USE_EXACT_ALARM` | Schedule alarms at exact times |
 | `USE_FULL_SCREEN_INTENT` | Show alarm over lock screen |
 | `WAKE_LOCK` | Keep CPU awake during alarm |
-| `RECEIVE_BOOT_COMPLETED` | Re-register alarms after reboot |
+| `RECEIVE_BOOT_COMPLETED` | Re-register alarms after the phone is powered back on |
 | `DISABLE_KEYGUARD` | Dismiss lock screen for alarm display |
 | `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` | Prevent system from killing alarm scheduling |
 | `FOREGROUND_SERVICE` + `FOREGROUND_SERVICE_MEDIA_PLAYBACK` | Keep alarm sound playing reliably |
@@ -98,6 +98,10 @@ com.alarmapp.alarmy/
 ### Force-stop behavior
 
 Android intentionally gives the user final control over **Force stop**. A normal app cannot intercept, prevent, or recover from that action while it remains stopped. Alarmy protects the cases Android permits: exact alarms, Doze handling, battery-exemption guidance, foreground playback, task-removal recovery, and rescheduling after reboot. Open Alarmy once after a force-stop to restart its keepalive service and restore scheduled alarms.
+
+### Phone power state
+
+Android can wake a sleeping phone and can deliver `setAlarmClock()` events through Doze, but a fully powered-off phone cannot run Android code. No ordinary app can turn the phone on from shutdown. Keep the phone powered on and charged; after it is powered back on, Alarmy automatically reschedules enabled alarms.
 
 ## Memory Pattern Game
 

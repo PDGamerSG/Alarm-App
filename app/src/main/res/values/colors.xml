@@ -43,6 +43,8 @@
     <color name="game_block_selected">#5CFFB1</color>
     <color name="game_block_wrong">#FF6B6B</color>
     <color name="game_block_border">#2A2E4D</color>
+    <color name="power_notice_bg">#202238</color>
+    <color name="power_notice_text">#B9BEDA</color>
 
     <!-- Legacy compat -->
     <color name="purple_200">#BB86FC</color>

@@ -12,10 +12,15 @@ import kotlinx.coroutines.launch
 class BootReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action == Intent.ACTION_BOOT_COMPLETED ||
-            intent.action == "android.intent.action.QUICKBOOT_POWERON" ||
-            intent.action == "com.htc.intent.action.QUICKBOOT_POWERON"
-        ) {
+        val action = intent.action
+        val shouldReschedule = action == Intent.ACTION_BOOT_COMPLETED ||
+            action == "android.intent.action.QUICKBOOT_POWERON" ||
+            action == "com.htc.intent.action.QUICKBOOT_POWERON" ||
+            action == Intent.ACTION_MY_PACKAGE_REPLACED ||
+            action == Intent.ACTION_TIME_CHANGED ||
+            action == Intent.ACTION_TIMEZONE_CHANGED
+
+        if (shouldReschedule) {
             // Start persistent keepalive service first
             KeepaliveService.start(context)
 
