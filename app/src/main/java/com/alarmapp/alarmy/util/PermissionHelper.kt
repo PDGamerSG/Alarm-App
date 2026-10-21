@@ -39,7 +39,7 @@ object PermissionHelper {
             putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, componentName)
             putExtra(
                 DevicePolicyManager.EXTRA_ADD_EXPLANATION,
-                "Alarmy needs Device Admin to prevent force-stopping and ensure alarms fire reliably."
+                "Optional device-management access. Android does not allow ordinary apps to block Force stop."
             )
         }
     }
@@ -68,10 +68,11 @@ object PermissionHelper {
         val notification: Boolean
     ) {
         val allGranted: Boolean
-            get() = batteryOptimization && deviceAdmin && exactAlarm && notification
+            // Device Admin cannot prevent a user from force-stopping a normal app.
+            get() = batteryOptimization && exactAlarm && notification
 
         val missingCount: Int
-            get() = listOf(batteryOptimization, deviceAdmin, exactAlarm, notification)
+            get() = listOf(batteryOptimization, exactAlarm, notification)
                 .count { !it }
     }
 

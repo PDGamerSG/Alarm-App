@@ -16,20 +16,20 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
 /**
- * Persistent foreground service that keeps the app out of Android's "stopped state".
+ * Persistent foreground service that keeps alarms active during normal background use.
  *
  * Why this matters:
- * - Android 3.1+ prevents broadcast receivers from firing if the app is in stopped state
- *   (which happens after a force-stop). A running foreground service keeps the app active.
+ * - A foreground service helps the app survive task removal and ordinary process pressure.
  * - stopWithTask=false (set in manifest) ensures this service survives task removal
  *   (swiping app from recents).
  * - START_STICKY means the OS restarts it automatically if killed by memory pressure.
- * - setAlarmClock alarms are shown in the system status bar and fire at highest priority;
- *   on most OEM ROMs they bypass stopped-state checks.
+ * - setAlarmClock alarms are shown in the system status bar and fire at highest priority
+ *   while the package is allowed to run.
  *
- * On a true user-initiated force-stop (Settings > Apps > Force Stop), Android kills
- * every process of the package — no app can fully escape that. However, this service
- * makes casual kills and swipe-dismissals non-fatal.
+ * A true user-initiated force-stop (Settings > Apps > Force Stop) is a system-enforced
+ * terminal action for ordinary apps. Android stops the service and suppresses the
+ * package's alarms and receivers until the user launches the app again. No public API
+ * can override that action; this service covers task removal and ordinary process kills.
  */
 class KeepaliveService : Service() {
 

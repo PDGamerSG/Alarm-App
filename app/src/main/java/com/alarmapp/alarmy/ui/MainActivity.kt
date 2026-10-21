@@ -232,11 +232,5 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        if (!status.deviceAdmin) {
-            try {
-                startActivity(PermissionHelper.requestDeviceAdmin(this))
-            } catch (_: Exception) {
-            }
-        }
     }
 }

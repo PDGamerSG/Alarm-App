@@ -13,7 +13,7 @@ A reliable Android alarm app built with Kotlin, MVVM architecture, and Room Data
 - **NFC tag dismissal** — assign a physical NFC tag to an alarm and tap it on the ringing alarm screen
 - **Configurable dismiss method** — choose the memory game, NFC tag, or require both in sequence
 - **Dark theme** by default
-- **Survives Doze, battery saver, app kill, and device restart**
+- **Resilient background alarms** with exact scheduling, battery-exemption guidance, and reboot recovery
 
 ## Setup
 
@@ -36,9 +36,9 @@ A reliable Android alarm app built with Kotlin, MVVM architecture, and Room Data
 | `POST_NOTIFICATIONS` | Show alarm and next-alarm notifications (Android 13+) |
 | `VIBRATE` | Vibrate on alarm |
 | `NFC` | Read the assigned NFC tag while the ringing alarm screen is in the foreground |
-| **Device Admin** | Prevents force-stop of the app |
+| **Device Admin** | Optional device-management access; it cannot block Android's Force stop action |
 
-On first launch, the app prompts for all critical permissions. A warning banner appears on the home screen if any are missing.
+On first launch, the app prompts for the permissions required for reliable alarms. A warning banner appears on the home screen if any are missing. Android does not allow a regular app to prevent the user from choosing **Force stop** in system settings; after a force-stop, the user must open Alarmy again before its services and alarms can resume.
 
 ## Architecture
 
@@ -75,7 +75,7 @@ com.alarmapp.alarmy/
 2. **Foreground Service** — plays sound via `STREAM_ALARM` at max volume, keeps playback alive
 3. **Boot Receiver** — re-registers all enabled alarms on device restart
 4. **Battery optimization exemption** — prevents system from limiting the app
-5. **Device Admin** — prevents user from force-stopping the app
+5. **Keepalive service** — restores scheduling after ordinary task removal or process pressure
 6. **Window flags** — `FLAG_SHOW_WHEN_LOCKED`, `FLAG_TURN_SCREEN_ON`, etc. ensure the alarm shows over lock screen
 
 ## Testing on Emulator vs Real Device
@@ -90,10 +90,14 @@ com.alarmapp.alarmy/
 - Device Admin works but has no real effect on emulator
 
 ### Real Device
-- Grant all permissions on first launch for best results
+- Grant all requested permissions on first launch for best results
 - Test with screen off, app killed, and after reboot
 - Some OEMs (Xiaomi, Huawei, Samsung) have extra battery restrictions — the battery optimization exemption dialog handles most cases
 - To test alarm sounds at full volume, ensure the alarm stream isn't muted
+
+### Force-stop behavior
+
+Android intentionally gives the user final control over **Force stop**. A normal app cannot intercept, prevent, or recover from that action while it remains stopped. Alarmy protects the cases Android permits: exact alarms, Doze handling, battery-exemption guidance, foreground playback, task-removal recovery, and rescheduling after reboot. Open Alarmy once after a force-stop to restart its keepalive service and restore scheduled alarms.
 
 ## Memory Pattern Game
 
