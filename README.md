@@ -11,6 +11,7 @@ A reliable Android alarm app built with Kotlin, MVVM architecture, and Room Data
 - **Persistent notification** showing next upcoming alarm
 - **Memory Pattern Dismiss Challenge** — 3x3 grid game with Easy/Medium/Hard difficulty
 - **NFC tag dismissal** — assign a physical NFC tag to an alarm and tap it on the ringing alarm screen
+- **Configurable dismiss method** — choose the memory game, NFC tag, or require both in sequence
 - **Dark theme** by default
 - **Survives Doze, battery saver, app kill, and device restart**
 
@@ -106,7 +107,7 @@ Wrong taps trigger a shake animation, reset the sequence with a new random patte
 
 ## NFC Tag Dismissal
 
-NFC is optional. On a phone with NFC enabled, edit an alarm and tap **Scan NFC Tag**, then hold the tag near the phone until its identifier is shown. Save the alarm. When that alarm rings, touching the same tag to the phone dismisses the alarm immediately; a different tag is ignored and the memory challenge remains available.
+NFC is optional. On a phone with NFC enabled, edit an alarm and tap **Scan NFC Tag**, then hold the tag near the phone until its identifier is shown. Save the alarm. **Dismiss Method** controls whether the ringing alarm uses the memory game, the assigned NFC tag, or both in sequence. In the combined mode, the game must be completed before the NFC tag is accepted. A different tag is ignored.
 
 The app uses Android's foreground reader mode (`NfcAdapter.enableReaderMode`) and the tag identifier (`Tag.getId()`), so the tag does not need to be formatted or written. Reader mode is enabled only while the alarm activity is visible and is disabled when it leaves the foreground. Tag identifiers are suitable for convenience, not as a cryptographic secret: some tag types can expose a changeable or randomized identifier.
 

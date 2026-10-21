@@ -80,6 +80,7 @@ class AlarmService : Service() {
             putExtra("snooze_minutes", alarm.snoozeMinutes)
             putExtra("alarm_label", alarm.label)
             putExtra("nfc_tag_id", alarm.nfcTagId)
+            putExtra("dismiss_mode", alarm.dismissMode)
             putExtra("is_confirmation", isConfirmation)
             putExtra("confirmation_enabled", alarm.confirmationEnabled)
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -173,6 +174,7 @@ class AlarmService : Service() {
             putExtra("snooze_minutes", alarm.snoozeMinutes)
             putExtra("alarm_label", alarm.label)
             putExtra("nfc_tag_id", alarm.nfcTagId)
+            putExtra("dismiss_mode", alarm.dismissMode)
             putExtra("is_confirmation", isConfirmation)
             putExtra("confirmation_enabled", alarm.confirmationEnabled)
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or

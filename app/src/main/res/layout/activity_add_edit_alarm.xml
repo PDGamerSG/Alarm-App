@@ -307,6 +307,30 @@
                 android:text="Scan NFC Tag" />
         </LinearLayout>
 
+        <!-- Dismiss method -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Dismiss Method"
+            android:textColor="?android:textColorPrimary"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Choose what must be completed when the alarm rings"
+            android:textColor="?android:textColorSecondary"
+            android:textSize="12sp" />
+
+        <Spinner
+            android:id="@+id/spinnerDismissMode"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="4dp" />
+
         <!-- Snooze -->
         <TextView
             android:layout_width="wrap_content"

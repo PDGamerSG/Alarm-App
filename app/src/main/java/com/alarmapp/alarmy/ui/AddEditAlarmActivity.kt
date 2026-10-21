@@ -33,6 +33,7 @@ class AddEditAlarmActivity : AppCompatActivity() {
     private lateinit var btnCancel: MaterialButton
     private lateinit var spinnerSnooze: Spinner
     private lateinit var spinnerDifficulty: Spinner
+    private lateinit var spinnerDismissMode: Spinner
     private lateinit var switchConfirmation: SwitchMaterial
     private lateinit var switchProtected: SwitchMaterial
     private lateinit var tvNfcTag: TextView
@@ -54,6 +55,9 @@ class AddEditAlarmActivity : AppCompatActivity() {
             disableNfcReaderMode()
             nfcTagId = scannedId
             updateNfcStatus()
+            if (spinnerDismissMode.selectedItemPosition == Alarm.DISMISS_GAME) {
+                spinnerDismissMode.setSelection(Alarm.DISMISS_NFC)
+            }
             Toast.makeText(this, "NFC tag assigned to this alarm", Toast.LENGTH_SHORT).show()
         }
     }
@@ -87,6 +91,7 @@ class AddEditAlarmActivity : AppCompatActivity() {
         btnCancel = findViewById(R.id.btnCancel)
         spinnerSnooze = findViewById(R.id.spinnerSnooze)
         spinnerDifficulty = findViewById(R.id.spinnerDifficulty)
+        spinnerDismissMode = findViewById(R.id.spinnerDismissMode)
         switchConfirmation = findViewById(R.id.switchConfirmation)
         switchProtected = findViewById(R.id.switchProtected)
         tvNfcTag = findViewById(R.id.tvNfcTag)
@@ -98,6 +103,9 @@ class AddEditAlarmActivity : AppCompatActivity() {
             waitingForNfc = false
             disableNfcReaderMode()
             nfcTagId = ""
+            if (spinnerDismissMode.selectedItemPosition != Alarm.DISMISS_GAME) {
+                spinnerDismissMode.setSelection(Alarm.DISMISS_GAME)
+            }
             updateNfcStatus()
         }
         updateNfcStatus()
@@ -120,6 +128,9 @@ class AddEditAlarmActivity : AppCompatActivity() {
         // Difficulty spinner
         val difficultyOptions = arrayOf("Easy (3 blocks)", "Medium (5 blocks)", "Hard (7 blocks)")
         spinnerDifficulty.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, difficultyOptions)
+
+        val dismissModeOptions = arrayOf("Memory game", "NFC tag", "Memory game + NFC tag")
+        spinnerDismissMode.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, dismissModeOptions)
 
         // Ringtone picker
         findViewById<LinearLayout>(R.id.ringtoneContainer).setOnClickListener {
@@ -198,6 +209,13 @@ class AddEditAlarmActivity : AppCompatActivity() {
             switchProtected.isChecked = alarm.isProtected
             existingPendingDisableAt = alarm.pendingDisableAt
             nfcTagId = alarm.nfcTagId
+            spinnerDismissMode.setSelection(
+                when (alarm.dismissMode) {
+                    Alarm.DISMISS_NFC -> Alarm.DISMISS_NFC
+                    Alarm.DISMISS_GAME_AND_NFC -> Alarm.DISMISS_GAME_AND_NFC
+                    else -> Alarm.DISMISS_GAME
+                }
+            )
             updateNfcStatus()
 
             title = "Edit Alarm"
@@ -233,6 +251,12 @@ class AddEditAlarmActivity : AppCompatActivity() {
 
         val confirmationEnabled = switchConfirmation.isChecked
         val isProtected = switchProtected.isChecked
+        val dismissMode = spinnerDismissMode.selectedItemPosition
+
+        if (dismissMode != Alarm.DISMISS_GAME && nfcTagId.isBlank()) {
+            Toast.makeText(this, "Scan an NFC tag before choosing an NFC dismiss method", Toast.LENGTH_LONG).show()
+            return
+        }
 
         val alarm = Alarm(
             id = if (editAlarmId != -1L) editAlarmId else 0,
@@ -249,7 +273,8 @@ class AddEditAlarmActivity : AppCompatActivity() {
             isProtected = isProtected,
             // editing clears any pending disable
             pendingDisableAt = 0L,
-            nfcTagId = nfcTagId
+            nfcTagId = nfcTagId,
+            dismissMode = dismissMode
         )
 
         if (editAlarmId != -1L) {

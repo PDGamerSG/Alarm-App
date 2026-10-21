@@ -44,13 +44,25 @@ class AlarmActivity : AppCompatActivity(), MemoryGameView.GameListener {
     private var isConfirmation: Boolean = false
     private var confirmationEnabled: Boolean = false
     private var nfcTagId: String = ""
+    private var dismissMode: Int = Alarm.DISMISS_GAME
+    private var challengeComplete = false
     private var nfcDismissed = false
+    private val requiresNfc: Boolean
+        get() = dismissMode != Alarm.DISMISS_GAME && nfcTagId.isNotBlank()
+    private val usesMemoryGame: Boolean
+        get() = dismissMode != Alarm.DISMISS_NFC
     private val nfcAdapter: NfcAdapter? by lazy { NfcAdapter.getDefaultAdapter(this) }
     private val nfcReaderCallback = NfcAdapter.ReaderCallback { tag ->
         val scannedId = NfcTagUtils.canonicalId(tag)
         runOnUiThread {
             if (nfcDismissed || isFinishing || isDestroyed) return@runOnUiThread
+            if (!requiresNfc) return@runOnUiThread
             if (nfcTagId.isNotBlank() && scannedId == nfcTagId) {
+                if (dismissMode == Alarm.DISMISS_GAME_AND_NFC && !challengeComplete) {
+                    tvStatus.text = "COMPLETE THE MEMORY GAME, THEN TAP THE NFC TAG"
+                    Toast.makeText(this, "Finish the memory game first", Toast.LENGTH_SHORT).show()
+                    return@runOnUiThread
+                }
                 nfcDismissed = true
                 tvStatus.text = "NFC TAG ACCEPTED — ALARM DISMISSED"
                 tvNfcHint.visibility = View.GONE
@@ -102,6 +114,18 @@ class AlarmActivity : AppCompatActivity(), MemoryGameView.GameListener {
         isConfirmation = intent.getBooleanExtra("is_confirmation", false)
         confirmationEnabled = intent.getBooleanExtra("confirmation_enabled", false)
         nfcTagId = intent.getStringExtra("nfc_tag_id")?.uppercase(Locale.ROOT) ?: ""
+        val configuredDismissMode = intent.getIntExtra(
+            "dismiss_mode",
+            if (nfcTagId.isNotBlank()) Alarm.DISMISS_NFC else Alarm.DISMISS_GAME
+        )
+        dismissMode = when (configuredDismissMode) {
+            Alarm.DISMISS_NFC, Alarm.DISMISS_GAME_AND_NFC -> configuredDismissMode
+            else -> Alarm.DISMISS_GAME
+        }
+        // A malformed/old configuration must always retain a usable dismiss path.
+        if (nfcTagId.isBlank() && dismissMode != Alarm.DISMISS_GAME) {
+            dismissMode = Alarm.DISMISS_GAME
+        }
 
         tvTime = findViewById(R.id.tvAlarmTime)
         tvLabel = findViewById(R.id.tvAlarmLabel)
@@ -112,7 +136,14 @@ class AlarmActivity : AppCompatActivity(), MemoryGameView.GameListener {
         btnSnooze = findViewById(R.id.btnSnooze)
         tvRoundInfo = findViewById(R.id.tvRoundInfo)
         memoryGameView = findViewById(R.id.memoryGameView)
-        tvNfcHint.visibility = if (nfcTagId.isNotBlank()) View.VISIBLE else View.GONE
+        tvNfcHint.visibility = if (requiresNfc) View.VISIBLE else View.GONE
+        if (requiresNfc) {
+            tvNfcHint.text = if (dismissMode == Alarm.DISMISS_GAME_AND_NFC) {
+                "Complete the game, then tap the assigned NFC tag to dismiss"
+            } else {
+                "Tap the assigned NFC tag to dismiss"
+            }
+        }
 
         tvLabel.text = if (isConfirmation) "Are you still awake?"
                        else if (label.isNotBlank()) label else "Alarm"
@@ -122,6 +153,11 @@ class AlarmActivity : AppCompatActivity(), MemoryGameView.GameListener {
         memoryGameView.difficulty = baseDifficulty
         memoryGameView.listener = this
         updateRoundDisplay()
+        if (!usesMemoryGame) {
+            memoryGameView.visibility = View.GONE
+            tvAttempts.visibility = View.GONE
+            tvRoundInfo.text = "NFC DISMISS"
+        }
 
         // Snooze button — hidden during confirmation checks
         if (snoozeMinutes > 0 && !isConfirmation) {
@@ -140,8 +176,12 @@ class AlarmActivity : AppCompatActivity(), MemoryGameView.GameListener {
             }
         }, 1000, 1000)
 
-        // Countdown from 5 before game starts — gives user time to wake up
-        startGameCountdown()
+        // Countdown from 5 before game starts — gives user time to wake up.
+        if (usesMemoryGame) {
+            startGameCountdown()
+        } else {
+            tvStatus.text = "TAP THE ASSIGNED NFC TAG TO DISMISS"
+        }
     }
 
     private fun setupWindowFlags() {
@@ -228,7 +268,7 @@ class AlarmActivity : AppCompatActivity(), MemoryGameView.GameListener {
     override fun onResume() {
         super.onResume()
         applyImmersiveMode()
-        enableNfcReaderMode()
+        if (requiresNfc) enableNfcReaderMode()
     }
 
     override fun onPause() {
@@ -237,7 +277,7 @@ class AlarmActivity : AppCompatActivity(), MemoryGameView.GameListener {
     }
 
     private fun enableNfcReaderMode() {
-        if (nfcTagId.isBlank()) return
+        if (!requiresNfc) return
         val adapter = nfcAdapter ?: return
         if (!adapter.isEnabled) return
         runCatching {
@@ -292,6 +332,16 @@ class AlarmActivity : AppCompatActivity(), MemoryGameView.GameListener {
                 }, 800)
             }, 1500)
         } else {
+            challengeComplete = true
+            if (dismissMode == Alarm.DISMISS_GAME_AND_NFC) {
+                tvStatus.text = "GAME COMPLETE — TAP THE ASSIGNED NFC TAG"
+                tvRoundInfo.text = "NOW TAP NFC"
+                tvNfcHint.visibility = View.VISIBLE
+                tvNfcHint.text = "Tap the assigned NFC tag to finish dismissing"
+                tvWrong.visibility = View.GONE
+                // Keep the alarm audible until the required NFC proof is supplied.
+                return
+            }
             tvStatus.text = "ALARM DISMISSED!"
             tvRoundInfo.text = "ALL DONE!"
             tvWrong.visibility = View.GONE

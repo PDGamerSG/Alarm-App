@@ -19,14 +19,20 @@ data class Alarm(
     val confirmationEnabled: Boolean = false, // Re-ring after 5 min to confirm awake
     val isProtected: Boolean = false, // Disabling requires a 10-min delay
     val pendingDisableAt: Long = 0L, // epoch millis; 0 = not pending
-    /** Canonical NFC tag identifier used to dismiss this alarm; blank means NFC is disabled. */
-    val nfcTagId: String = ""
+    /** Canonical NFC tag identifier used to dismiss this alarm; blank means NFC is unavailable. */
+    val nfcTagId: String = "",
+    /** How the ringing alarm can be dismissed. */
+    val dismissMode: Int = DISMISS_GAME
 ) {
     companion object {
         const val PROTECTED_DISABLE_DELAY_MS = 10 * 60 * 1000L
         const val DIFFICULTY_EASY = 3
         const val DIFFICULTY_MEDIUM = 5
         const val DIFFICULTY_HARD = 7
+
+        const val DISMISS_GAME = 0
+        const val DISMISS_NFC = 1
+        const val DISMISS_GAME_AND_NFC = 2
 
         const val MON = 0x01
         const val TUE = 0x02

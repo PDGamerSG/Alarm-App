@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [Alarm::class], version = 4, exportSchema = false)
+@Database(entities = [Alarm::class], version = 5, exportSchema = false)
 abstract class AlarmDatabase : RoomDatabase() {
     abstract fun alarmDao(): AlarmDao
 
@@ -36,6 +36,19 @@ abstract class AlarmDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL(
+                    "ALTER TABLE alarms ADD COLUMN dismissMode INTEGER NOT NULL DEFAULT 0"
+                )
+                // Before dismissal modes existed, assigning a tag dismissed immediately.
+                // Keep that behavior for existing alarms while new alarms default to the game.
+                database.execSQL(
+                    "UPDATE alarms SET dismissMode = 1 WHERE nfcTagId IS NOT NULL AND nfcTagId != ''"
+                )
+            }
+        }
+
         fun getDatabase(context: Context): AlarmDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -43,7 +56,7 @@ abstract class AlarmDatabase : RoomDatabase() {
                     AlarmDatabase::class.java,
                     "alarm_database"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                     .build()
                 INSTANCE = instance
                 instance
